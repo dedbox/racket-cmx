@@ -1,2 +1,2 @@
-# racket-cmx
+# cmx
 A calculus of mediated exchange
