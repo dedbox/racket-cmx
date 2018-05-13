@@ -6,7 +6,7 @@
  event
  racket/function)
 
-(struct mediator (offer accept put get) #:mutable)
+(struct mediator (offer accept put get))
 
 (define (make-mediator)
   (define ctrl-ch (make-channel))
@@ -40,18 +40,30 @@
 ;; Hooks
 
 (define (on-offer m f)
-  (define next-on-offer (mediator-offer m))
-  (set-mediator-offer! m (λ vs (bind next-on-offer (pure (apply f vs))))))
+  (on-offer* m (λ (next) (λ vs (bind (pure (apply f vs)) next)))))
+
+(define (on-offer* m f)
+  (define next (mediator-offer m))
+  (struct-copy mediator m [offer (λ vs (apply (f next) vs))]))
 
 (define (on-accept m f)
-  (set-mediator-accept! m (fmap f (mediator-accept m))))
+  (on-accept* m (λ (next) (fmap f next))))
+
+(define (on-accept* m f)
+  (struct-copy mediator m [accept (f (mediator-accept m))]))
 
 (define (on-put m f)
-  (define next-on-put (mediator-put m))
-  (set-mediator-put! m (λ vs (bind next-on-put (pure (apply f vs))))))
+  (on-put* m (λ (next) (λ vs (bind (pure (apply f vs)) next)))))
+
+(define (on-put* m f)
+  (define next (mediator-put m))
+  (struct-copy mediator m [put (f next)]))
 
 (define (on-get m f)
-  (set-mediator-get! m (fmap f (mediator-get m))))
+  (on-get* m (curry fmap f)))
+
+(define (on-get* m f)
+  (struct-copy mediator m [get (f (mediator-get m))]))
 
 ;;; Unit Tests
 
@@ -94,8 +106,7 @@
 
    (test-case
      "on-offer"
-     (define m (make-mediator))
-     (on-offer m add1)
+     (define m (on-offer (make-mediator) add1))
      (define t
        (thread (λ () (for ([j 10]) (check = (sync (accept m)) (add1 j))))))
      (for ([i 10]) (check-pred void? (sync (offer m i))))
@@ -103,8 +114,7 @@
 
   (test-case
     "on-accept"
-    (define m (make-mediator))
-    (on-accept m add1)
+    (define m (on-accept (make-mediator) add1))
     (define t
       (thread (λ () (for ([i 10]) (check-pred void? (sync (offer m i)))))))
     (for ([j 10]) (check = (sync (accept m)) (add1 j)))
@@ -112,16 +122,14 @@
 
   (test-case
     "on-put"
-    (define m (make-mediator))
-    (on-put m add1)
+    (define m (on-put (make-mediator) add1))
     (define t (thread (λ () (for ([j 10]) (check = (sync (get m)) (add1 j))))))
     (for ([i 10]) (check-pred void? (sync (put m i))))
     (void (sync t)))
 
   (test-case
     "on-get"
-    (define m (make-mediator))
-    (on-get m add1)
+    (define m (on-get (make-mediator) add1))
     (define t
       (thread (λ () (for ([i 10]) (check-pred void? (sync (put m i)))))))
     (for ([j 10]) (check = (sync (get m)) (add1 j)))
@@ -130,14 +138,14 @@
   (test-case
     "on-*"
     (define m (make-mediator))
-    (on-offer m (curry + 1))
-    (on-offer m (curry * 2))
-    (on-accept m (curry + 3))
-    (on-accept m (curry * 4))
-    (on-put m (curry + 5))
-    (on-put m (curry * 6))
-    (on-get m (curry + 7))
-    (on-get m (curry * 8))
+    (set! m (on-offer m (curry + 1)))
+    (set! m (on-offer m (curry * 2)))
+    (set! m (on-accept m (curry + 3)))
+    (set! m (on-accept m (curry * 4)))
+    (set! m (on-put m (curry + 5)))
+    (set! m (on-put m (curry * 6)))
+    (set! m (on-get m (curry + 7)))
+    (set! m (on-get m (curry * 8)))
     (define t1
       (thread (λ () (for ([i 10]) (check-pred void? (sync (offer m i)))))))
     (define t2
