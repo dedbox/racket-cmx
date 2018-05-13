@@ -37,6 +37,18 @@
 (define (get m)
   (mediator-get m))
 
+(define (offer/put m vs)
+  (seq (offer m m) (put* m vs)))
+
+(define (offer/get m)
+  (seq (offer m m) (get m)))
+
+(define (accept/put m vs)
+  (bind (accept m) (curryr put* vs)))
+
+(define (accept/get m)
+  (bind (accept m) get))
+
 ;; Hooks
 
 (define (on-offer m f)
