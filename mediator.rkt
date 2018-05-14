@@ -12,9 +12,9 @@
   (define ctrl-ch (make-channel))
   (define data-ch (make-channel))
   (mediator
-   (λ vs (fmap void (channel-put-evt ctrl-ch vs)))
+   (λ vs (event-void (channel-put-evt ctrl-ch vs)))
    (fmap (curry apply values) ctrl-ch)
-   (λ vs (fmap void (channel-put-evt data-ch vs)))
+   (λ vs (event-void (channel-put-evt data-ch vs)))
    (fmap (curry apply values) data-ch)))
 
 ;; Commands
