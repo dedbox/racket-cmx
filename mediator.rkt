@@ -12,9 +12,9 @@
   (define ctrl-ch (make-channel))
   (define data-ch (make-channel))
   (mediator
-   (λ vs (event-void (channel-put-evt ctrl-ch vs)))
+   (λ vs (fmap void (channel-put-evt ctrl-ch vs)))
    (fmap (curry apply values) ctrl-ch)
-   (λ vs (event-void (channel-put-evt data-ch vs)))
+   (λ vs (fmap void (channel-put-evt data-ch vs)))
    (fmap (curry apply values) data-ch)))
 
 ;; Commands
@@ -36,18 +36,6 @@
 
 (define (get m)
   (mediator-get m))
-
-(define (offer/put m vs)
-  (seq (offer m m) (put* m vs)))
-
-(define (offer/get m)
-  (seq (offer m m) (get m)))
-
-(define (accept/put m vs)
-  (bind (accept m) (curryr put* vs)))
-
-(define (accept/get m)
-  (bind (accept m) get))
 
 ;; Hooks
 
@@ -84,14 +72,14 @@
   ;; Commands
 
   (test-case
-    "offer"
+      "offer"
     (define m (make-mediator))
     (define t (thread (λ () (for ([j 10]) (check = (sync (accept m)) j)))))
     (for ([i 10]) (check-pred void? (sync (offer m i))))
     (void (sync t)))
 
   (test-case
-    "accept"
+      "accept"
     (define m (make-mediator))
     (define t
       (thread (λ () (for ([i 10]) (check-pred void? (sync (offer m i)))))))
@@ -99,14 +87,14 @@
     (void (sync t)))
 
   (test-case
-    "put"
+      "put"
     (define m (make-mediator))
     (define t (thread (λ () (for ([j 10]) (check = (sync (get m)) j)))))
     (for ([i 10]) (check-pred void? (sync (put m i))))
     (void (sync t)))
 
   (test-case
-    "get"
+      "get"
     (define m (make-mediator))
     (define t
       (thread (λ () (for ([i 10]) (check-pred void? (sync (put m i)))))))
@@ -115,16 +103,16 @@
 
   ;; Hooks
 
-   (test-case
-     "on-offer"
-     (define m (on-offer (make-mediator) add1))
-     (define t
-       (thread (λ () (for ([j 10]) (check = (sync (accept m)) (add1 j))))))
-     (for ([i 10]) (check-pred void? (sync (offer m i))))
-     (void (sync t)))
+  (test-case
+      "on-offer"
+    (define m (on-offer (make-mediator) add1))
+    (define t
+      (thread (λ () (for ([j 10]) (check = (sync (accept m)) (add1 j))))))
+    (for ([i 10]) (check-pred void? (sync (offer m i))))
+    (void (sync t)))
 
   (test-case
-    "on-accept"
+      "on-accept"
     (define m (on-accept (make-mediator) add1))
     (define t
       (thread (λ () (for ([i 10]) (check-pred void? (sync (offer m i)))))))
@@ -132,14 +120,14 @@
     (void (sync t)))
 
   (test-case
-    "on-put"
+      "on-put"
     (define m (on-put (make-mediator) add1))
     (define t (thread (λ () (for ([j 10]) (check = (sync (get m)) (add1 j))))))
     (for ([i 10]) (check-pred void? (sync (put m i))))
     (void (sync t)))
 
   (test-case
-    "on-get"
+      "on-get"
     (define m (on-get (make-mediator) add1))
     (define t
       (thread (λ () (for ([i 10]) (check-pred void? (sync (put m i)))))))
@@ -147,7 +135,7 @@
     (void (sync t)))
 
   (test-case
-    "on-*"
+      "on-*"
     (define m (make-mediator))
     (set! m (on-offer m (curry + 1)))
     (set! m (on-offer m (curry * 2)))

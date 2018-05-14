@@ -13,20 +13,20 @@
 
 (define (say-to* m vs)
   (define m0 (make-mediator))
-  (seq (offer m m0) (accept/put m0 vs)))
+  (seq (offer m m0) (bind (accept m0) (curryr put* vs))))
 
 (define (hear-from m)
-  (bind (accept m) offer/get))
+  (event-let ([m* (accept m)]) (offer m* m*) (get m*)))
 
 (define (ask m)
   (define m0 (make-mediator))
-  (seq (offer m m0) (accept/get m0)))
+  (seq (offer m m0) (bind (accept m0) get)))
 
 (define (tell m . vs)
   (tell* m vs))
 
 (define (tell* m vs)
-  (bind (accept m) (curryr offer/put vs)))
+  (event-let ([m0 (accept m)]) (offer m0 m0) (put* m0 vs)))
 
 ;; Input
 
@@ -36,8 +36,9 @@
       (fmap cons (hear-from m) (collect m (sub1 N)))))
 
 (define (quorum m N)
-  (event-let ([m0s (fmap* list (make-list N (accept m)))])
-    (fmap list (async-set* (map (λ (m0) (seq (offer m0 m0) (get m0))) m0s)))))
+  (event-let
+   ([m0s (fmap* list (make-list N (accept m)))])
+   (fmap list (async-set* (map (λ (m0) (seq (offer m0 m0) (get m0))) m0s)))))
 
 ;; Control
 
@@ -53,14 +54,16 @@
     (seq (offer mk mb) (accept mb)))
   (define (source m0)
     (on-put* m0 (λ (next) (λ vs (seq0 (apply next vs) gate)))))
-  (event-let ([m0 (accept m)]
-              [mbs (apply async-list (map target ms))])
-    (let ([m0* (source m0)])
-      (seq
-       (offer m0 m0*)
-       (event-let ([v (get m0*)])
-         (async-set* (map (curryr put v) mbs))
-         (open-gate gate))))))
+  (event-let
+   ([m0 (accept m)]
+    [mbs (apply async-list (map target ms))])
+   (let ([m0* (source m0)])
+     (seq
+      (offer m0 m0*)
+      (event-let
+       ([v (get m0*)])
+       (async-set* (map (curryr put v) mbs))
+       (open-gate gate))))))
 
 ;;; Unit Tests
 
@@ -68,35 +71,35 @@
   (require rackunit)
 
   (test-case
-    "say-to"
+      "say-to"
     (define m (make-mediator))
     (define t (thread (λ () (for ([j 10]) (check = (sync (hear-from m)) j)))))
     (for ([i 10]) (check-pred void? (sync (say-to m i))))
     (void (sync t)))
 
   (test-case
-    "hear-from"
+      "hear-from"
     (define m (make-mediator))
     (define t (thread (λ () (for ([i 10]) (sync (say-to m i))))))
     (for ([j 10]) (check = (sync (hear-from m)) j))
     (void (sync t)))
 
   (test-case
-    "ask"
+      "ask"
     (define m (make-mediator))
     (define t (thread (λ () (for ([i 10]) (sync (tell m i))))))
     (for ([j 10]) (check = (sync (ask m)) j))
     (void (sync t)))
 
   (test-case
-    "tell"
+      "tell"
     (define m (make-mediator))
     (define t (thread (λ () (for ([j 10]) (check = (sync (ask m)) j)))))
     (for ([i 10]) (check-pred void? (sync (tell m i))))
     (void (sync t)))
 
   (test-case
-    "collect"
+      "collect"
     (define m (make-mediator))
     (define t (thread (λ () (for ([i 10]) (sync (say-to m i))))))
     (check equal? (sync (collect m 5)) '(0 1 2 3 4))
@@ -104,7 +107,7 @@
     (void (sync t)))
 
   (test-case
-    "quorum"
+      "quorum"
     (define m (make-mediator))
     (define ts (for/list ([i 10]) (thread (λ () (sync (say-to m i))))))
     (define seen null)
@@ -122,7 +125,7 @@
     (for-each sync ts))
 
   (test-case
-    "forward"
+      "forward"
     (define m1 (make-mediator))
     (define m2 (make-mediator))
     (define t1 (thread (λ () (for ([i 10]) (sync (say-to m1 i))))))
@@ -131,11 +134,9 @@
     (sync (fmap void t1 t2)))
 
   (test-case
-    "broadcast"
+      "broadcast"
     (define m (make-mediator))
     (define ms (for/list ([_ 10]) (make-mediator)))
     (define t (thread (λ () (check-pred void? (sync (say-to m 1))))))
     (define ts (for/list ([mk ms] [k 10]) (thread (λ () (check = (sync (hear-from mk)) 1)))))
-    (sync (broadcast m ms)))
-
-  )
+    (sync (broadcast m ms))))
