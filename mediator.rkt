@@ -68,8 +68,7 @@
   (on-put* m (λ (next) (λ vs (bind (pure (apply f vs)) next)))))
 
 (define (on-put* m f)
-  (define next (mediator-put m))
-  (struct-copy mediator m [put (f next)]))
+  (struct-copy mediator m [put (f (mediator-put m))]))
 
 (define (on-get m f)
   (on-get* m (curry fmap f)))
