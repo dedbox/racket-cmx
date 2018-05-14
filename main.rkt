@@ -11,13 +11,15 @@
 (define (say-to m . vs)
   (say-to* m vs))
 
-(define (say-to* m vs [m0 (make-mediator)])
+(define (say-to* m vs)
+  (define m0 (make-mediator))
   (seq (offer m m0) (accept/put m0 vs)))
 
 (define (hear-from m)
   (bind (accept m) offer/get))
 
-(define (ask m [m0 (make-mediator)])
+(define (ask m)
+  (define m0 (make-mediator))
   (seq (offer m m0) (accept/get m0)))
 
 (define (tell m . vs)
