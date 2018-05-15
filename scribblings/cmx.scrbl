@@ -4,6 +4,8 @@
 @author{@author+email["Eric Griffis" "dedbox@gmail.com"]}
 
 @(require
+  cmx/mediator
+  racket/contract/base
   racket/sandbox
   scribble/examples
   (for-label cmx
@@ -50,12 +52,13 @@ another for transferring data. Concretely, a mediator is a set of handlers. A
 @deftech{handler} is a function that implements, extends, or overrides one of
 the four basic @deftech{mediated operations}: @racket[offer], @racket[accept],
 @racket[put], and @racket[get]. A @deftech{hook} is a function that extends
-the behavior of a mediated operation by transforming its input or output.
+the behavior of a mediated operation by returning a value derived from its
+input.
 
 @defthing[
+  handler/c contract?
   #:value (-> (unconstrained-domain-> evt?)
               (unconstrained-domain-> evt?))
-  handler/c contract?
 ]{
 
   A @rtech{flat contract} that accepts @tech{handler} functions.
