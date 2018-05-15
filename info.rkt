@@ -7,7 +7,11 @@
     "event-lang"))
 
 (define build-deps
-  '("rackunit-lib"
+  '("draw-lib"
+    "pict-lib"
+    "racket-doc"
+    "rackunit-lib"
+    "sandbox-lib"
     "scribble-lib"))
 
 (define scribblings
