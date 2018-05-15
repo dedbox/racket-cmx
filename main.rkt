@@ -10,14 +10,14 @@
 
 ;; Simple Exchanges
 
-(define (say-to m . vs)
-  (say-to* m vs))
+(define (say m . vs)
+  (say* m vs))
 
-(define (say-to* m vs)
+(define (say* m vs)
   (define m0 (make-mediator))
   (seq (offer m m0) (bind (accept m0) (curryr put* vs))))
 
-(define (hear-from m)
+(define (hear m)
   (event-let ([m* (accept m)]) (offer m* m*) (get m*)))
 
 (define (ask m)
@@ -35,7 +35,7 @@
 (define (collect m N)
   (if (<= N 0)
       (pure null)
-      (fmap cons (hear-from m) (collect m (sub1 N)))))
+      (fmap cons (hear m) (collect m (sub1 N)))))
 
 (define (quorum m N)
   (event-let
@@ -73,17 +73,17 @@
   (require rackunit)
 
   (test-case
-      "say-to"
+      "say"
     (define m (make-mediator))
-    (define t (thread (λ () (for ([j 10]) (check = (sync (hear-from m)) j)))))
-    (for ([i 10]) (check-pred void? (sync (say-to m i))))
+    (define t (thread (λ () (for ([j 10]) (check = (sync (hear m)) j)))))
+    (for ([i 10]) (check-pred void? (sync (say m i))))
     (void (sync t)))
 
   (test-case
-      "hear-from"
+      "hear"
     (define m (make-mediator))
-    (define t (thread (λ () (for ([i 10]) (sync (say-to m i))))))
-    (for ([j 10]) (check = (sync (hear-from m)) j))
+    (define t (thread (λ () (for ([i 10]) (sync (say m i))))))
+    (for ([j 10]) (check = (sync (hear m)) j))
     (void (sync t)))
 
   (test-case
@@ -103,7 +103,7 @@
   (test-case
       "collect"
     (define m (make-mediator))
-    (define t (thread (λ () (for ([i 10]) (sync (say-to m i))))))
+    (define t (thread (λ () (for ([i 10]) (sync (say m i))))))
     (check equal? (sync (collect m 5)) '(0 1 2 3 4))
     (check equal? (sync (collect m 5)) '(5 6 7 8 9))
     (void (sync t)))
@@ -111,7 +111,7 @@
   (test-case
       "quorum"
     (define m (make-mediator))
-    (define ts (for/list ([i 10]) (thread (λ () (sync (say-to m i))))))
+    (define ts (for/list ([i 10]) (thread (λ () (sync (say m i))))))
     (define seen null)
     (define (check-quorum N)
       (define xs (sync (quorum m N)))
@@ -130,8 +130,8 @@
       "forward"
     (define m1 (make-mediator))
     (define m2 (make-mediator))
-    (define t1 (thread (λ () (for ([i 10]) (sync (say-to m1 i))))))
-    (define t2 (thread (λ () (for ([j 10]) (check = (sync (hear-from m2)) j)))))
+    (define t1 (thread (λ () (for ([i 10]) (sync (say m1 i))))))
+    (define t2 (thread (λ () (for ([j 10]) (check = (sync (hear m2)) j)))))
     (for ([_ 10]) (sync (forward m1 m2)))
     (sync (fmap void t1 t2)))
 
@@ -139,6 +139,6 @@
       "broadcast"
     (define m (make-mediator))
     (define ms (for/list ([_ 10]) (make-mediator)))
-    (define t (thread (λ () (check-pred void? (sync (say-to m 1))))))
-    (define ts (for/list ([mk ms] [k 10]) (thread (λ () (check = (sync (hear-from mk)) 1)))))
+    (define t (thread (λ () (check-pred void? (sync (say m 1))))))
+    (define ts (for/list ([mk ms] [k 10]) (thread (λ () (check = (sync (hear mk)) 1)))))
     (sync (broadcast m ms))))

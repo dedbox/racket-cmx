@@ -307,14 +307,15 @@ input.
 @defmodule[cmx]
 
 @deftogether[(
-  @defproc[(say-to [m mediator?] [v any/c] ...) evt?]
-  @defproc[(say-to* [m mediator?] [vs (listof any/c)]) evt?]
 )]
+  @defproc[(say [m mediator?] [v any/c] ...) evt?]
+  @defproc[(say* [m mediator?] [vs (listof any/c)]) evt?]
 
-@defproc[(hear-from [m mediator?]) evt?]
 
 @defproc[(ask [m mediator?]) evt?]
+@defproc[(hear [m mediator?]) evt?]{
 
+}
 @deftogether[(
   @defproc[(tell [m mediator?] [v any/c] ...) evt?]
   @defproc[(tell* [m mediator?] [vs (listof any/c)]) evy?]
