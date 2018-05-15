@@ -1,10 +1,32 @@
 #lang racket/base
 
-(provide (all-defined-out))
-
 (require
  event
+ racket/contract/base
  racket/function)
+
+(provide
+ (contract-out
+  [mediator? predicate/c]
+  [make-mediator (-> mediator?)]
+  [offer (-> mediator? any/c ... evt?)]
+  [offer* (-> mediator? (listof any/c) evt?)]
+  [accept (-> mediator? evt?)]
+  [put (-> mediator? any/c ... evt?)]
+  [put* (-> mediator? (listof any/c) evt?)]
+  [get (-> mediator? evt?)]
+  [bind-offer (-> mediator? handler/c mediator?)]
+  [bind-accept (-> mediator? handler/c mediator?)]
+  [bind-put (-> mediator? handler/c mediator?)]
+  [bind-get (-> mediator? handler/c mediator?)]
+  [on-offer (-> mediator? procedure? mediator?)]
+  [on-accept (-> mediator? procedure? mediator?)]
+  [on-put (-> mediator? procedure? mediator?)]
+  [on-get (-> mediator? procedure? mediator?)]))
+
+(define handler/c
+  (-> (unconstrained-domain-> evt?)
+      (unconstrained-domain-> evt?)))
 
 (struct mediator (offer accept put get))
 
@@ -13,9 +35,9 @@
   (define data-ch (make-channel))
   (mediator
    (λ vs (fmap void (channel-put-evt ctrl-ch vs)))
-   (fmap (curry apply values) ctrl-ch)
+   (λ () (fmap (curry apply values) ctrl-ch))
    (λ vs (fmap void (channel-put-evt data-ch vs)))
-   (fmap (curry apply values) data-ch)))
+   (λ () (fmap (curry apply values) data-ch))))
 
 ;; Commands
 
@@ -26,7 +48,7 @@
   (apply (mediator-offer m) vs))
 
 (define (accept m)
-  (mediator-accept m))
+  ((mediator-accept m)))
 
 (define (put m . vs)
   (put* m vs))
@@ -35,34 +57,36 @@
   (apply (mediator-put m) vs))
 
 (define (get m)
-  (mediator-get m))
+  ((mediator-get m)))
+
+;; Handlers
+
+(define (bind-offer m f)
+  (define next (mediator-offer m))
+  (struct-copy mediator m [offer (λ vs (apply (f next) vs))]))
+
+(define (bind-accept m f)
+  (struct-copy mediator m [accept (f (mediator-accept m))]))
+
+(define (bind-put m f)
+  (struct-copy mediator m [put (f (mediator-put m))]))
+
+(define (bind-get m f)
+  (struct-copy mediator m [get (f (mediator-get m))]))
 
 ;; Hooks
 
 (define (on-offer m f)
-  (on-offer* m (λ (next) (λ vs (bind (pure (apply f vs)) next)))))
-
-(define (on-offer* m f)
-  (define next (mediator-offer m))
-  (struct-copy mediator m [offer (λ vs (apply (f next) vs))]))
+  (bind-offer m (λ (next) (λ vs (bind (pure (apply f vs)) next)))))
 
 (define (on-accept m f)
-  (on-accept* m (λ (next) (fmap f next))))
-
-(define (on-accept* m f)
-  (struct-copy mediator m [accept (f (mediator-accept m))]))
+  (bind-accept m (λ (next) (λ () (fmap f (next))))))
 
 (define (on-put m f)
-  (on-put* m (λ (next) (λ vs (bind (pure (apply f vs)) next)))))
-
-(define (on-put* m f)
-  (struct-copy mediator m [put (f (mediator-put m))]))
+  (bind-put m (λ (next) (λ vs (bind (pure (apply f vs)) next)))))
 
 (define (on-get m f)
-  (on-get* m (curry fmap f)))
-
-(define (on-get* m f)
-  (struct-copy mediator m [get (f (mediator-get m))]))
+  (bind-get m (λ (next) (λ () (fmap f (next))))))
 
 ;;; Unit Tests
 

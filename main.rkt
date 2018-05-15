@@ -50,10 +50,10 @@
 (define (broadcast m ms)
   (define gate (make-gate))
   (define (target mk)
-    (define mb (on-get* (make-mediator) (λ (next) (seq0 next gate))))
+    (define mb (bind-get (make-mediator) (λ (next) (λ () (seq0 (next) gate)))))
     (seq (offer mk mb) (accept mb)))
   (define (source m0)
-    (on-put* m0 (λ (next) (λ vs (seq0 (apply next vs) gate)))))
+    (bind-put m0 (λ (next) (λ vs (seq0 (apply next vs) gate)))))
   (event-let
    ([m0 (accept m)]
     [mbs (apply async-list (map target ms))])
