@@ -7,6 +7,7 @@
 
 (provide
  (contract-out
+  [handler/c contract?]
   [mediator? predicate/c]
   [make-mediator (-> mediator?)]
   [offer (-> mediator? any/c ... evt?)]
