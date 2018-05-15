@@ -73,7 +73,8 @@ input.
 
 @defproc[(make-mediator) mediator?]{
 
-  Creates and returns a new @tech{mediator} with no @tech{mediation hooks}.
+  Creates and returns a new @tech{mediator} with default @tech{handlers} and
+  no @tech{hooks}.
 
 }
 
