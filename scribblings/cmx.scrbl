@@ -11,6 +11,7 @@
   scribble/examples
   (for-label cmx
              cmx/mediator
+             event
              racket/base
              racket/contract/base))
 
@@ -24,7 +25,7 @@
         [sandbox-memory-limit 50]
         [sandbox-eval-limits '(30 50)]
         [sandbox-make-inspector current-inspector])
-     (make-evaluator 'racket #:requires '(cmx cmx/mediator))))
+     (make-evaluator 'racket #:requires '(cmx cmx/mediator event))))
 
 @(define-syntax-rule (example expr ...)
    @examples[
@@ -148,7 +149,7 @@ input.
       (bind-offer
        (make-mediator)
        (λ _ (λ _ (handle-evt always-evt (λ _ 0))))))
-    (sync (offer M 1 2 3))
+    (code:line (sync (offer M 1 2 3)) (code:comment "no accept"))
   ]
 }
 
@@ -173,7 +174,7 @@ input.
       (bind-accept
        (make-mediator)
        (λ _ (λ _ (handle-evt always-evt (λ _ 0))))))
-    (sync (accept M))
+    (code:line (sync (accept M)) (code:comment "no offer"))
   ]
 }
 
@@ -204,7 +205,7 @@ input.
       (bind-put
        (make-mediator)
        (λ _ (λ _ (handle-evt always-evt (λ _ 0))))))
-    (sync (put M 1 2 3))
+    (code:line (sync (put M 1 2 3)) (code:comment "no get"))
   ]
 }
 
@@ -218,9 +219,8 @@ input.
       (bind-get
        (make-mediator)
        (λ (next) (λ _ (handle-evt (next) (λ vs (map add1 vs)))))))
-    (eval:alts
-     (thread (λ () (sync (put M 1 2 3))))
-     (void (thread (λ () (sync (put M 1 2 3))))))
+    (eval:alts (thread (λ () (sync (put M 1 2 3))))
+               (void (thread (λ () (sync (put M 1 2 3))))))
     (sync (get M))
   ]
 
@@ -229,7 +229,7 @@ input.
       (bind-get
        (make-mediator)
        (λ _ (λ _ (handle-evt always-evt (λ _ 0))))))
-    (sync (get M))
+    (code:line (sync (get M)) (code:comment "no put"))
   ]
 }
 
@@ -245,9 +245,8 @@ input.
     (define M (make-mediator))
     (set! M (on-offer M (curry cons 1)))
     (set! M (on-offer M (curry cons 2)))
-    (eval:alts
-     (thread (λ () (sync (offer M null))))
-     (void (thread (λ () (sync (offer M null))))))
+    (eval:alts (thread (λ () (sync (offer M null))))
+               (void (thread (λ () (sync (offer M null))))))
     (sync (accept M))
   ]
 }
@@ -262,9 +261,8 @@ input.
     (define M (make-mediator))
     (set! M (on-accept M (curry cons 1)))
     (set! M (on-accept M (curry cons 2)))
-    (eval:alts
-     (thread (λ () (sync (offer M null))))
-     (void (thread (λ () (sync (offer M null))))))
+    (eval:alts (thread (λ () (sync (offer M null))))
+               (void (thread (λ () (sync (offer M null))))))
     (sync (accept M))
   ]
 }
@@ -279,9 +277,8 @@ input.
     (define M (make-mediator))
     (set! M (on-put M (curry cons 1)))
     (set! M (on-put M (curry cons 2)))
-    (eval:alts
-     (thread (λ () (sync (put M null))))
-     (void (thread (λ () (sync (put M null))))))
+    (eval:alts (thread (λ () (sync (put M null))))
+               (void (thread (λ () (sync (put M null))))))
     (sync (get M))
   ]
 }
@@ -296,9 +293,8 @@ input.
     (define M (make-mediator))
     (set! M (on-get M (curry cons 1)))
     (set! M (on-get M (curry cons 2)))
-    (eval:alts
-     (thread (λ () (sync (put M null))))
-     (void (thread (λ () (sync (put M null))))))
+    (eval:alts (thread (λ () (sync (put M null))))
+               (void (thread (λ () (sync (put M null))))))
     (sync (get M))
   ]
 }
@@ -344,7 +340,8 @@ receiver.
 
   @example[
     (define M (make-mediator))
-    (define t (thread (λ () (sync (say M 123)))))
+    (eval:alts (thread (λ () (sync (say M 123))))
+               (void (thread (λ () (sync (say M 123))))))
     (sync (hear M))
   ]
 }
@@ -379,7 +376,8 @@ receiver.
 
   @example[
     (define M (make-mediator))
-    (define t (thread (λ () (sync (tell M 123)))))
+    (eval:alts (thread (λ () (sync (tell M 123))))
+               (void (thread (λ () (sync (tell M 123))))))
     (sync (ask M))
   ]
 }
@@ -414,8 +412,10 @@ receiver.
   @example[
     (define M1 (make-mediator))
     (define M2 (make-mediator))
-    (define t1 (thread (λ () (sync (say M1 1)))))
-    (define t2 (thread (λ () (sync (forward M1 M2)))))
+    (eval:alts (thread (λ () (sync (say M1 1))))
+               (void (thread (λ () (sync (say M1 1))))))
+    (eval:alts (thread (λ () (sync (forward M1 M2))))
+               (void (thread (λ () (sync (forward M1 M2))))))
     (sync (hear M2))
   ]
 }
@@ -431,11 +431,8 @@ receiver.
 
   @example[
     (define M (make-mediator))
-    (define t (thread (λ () (writeln (sync (collect M 3))))))
-    (sync (say M 1))
-    (sync (say M 2))
-    (sync (say M 3))
-    (eval:alts (sync t) (void (sync t)))
+    (for ([i 10]) (thread (λ () (sync (say M i)))))
+    (sync (collect M 3))
   ]
 }
 
@@ -449,8 +446,8 @@ receiver.
 
   @example[
     (define M (make-mediator))
-    (define ts (for/list ([i 10]) (thread (λ () (sync (say M i))))))
-    (sync (quorum M 10))
+    (for ([i 10]) (thread (λ () (sync (say M i)))))
+    (sync (quorum M 6))
   ]
 }
 
@@ -465,12 +462,13 @@ receiver.
 
   @example[
     (define M (make-mediator))
-    (define t (thread (λ () (sync (say M 1)))))
-    (define Ms (for/list ([_ 10]) (make-mediator)))
-    (define ts
-      (for/list ([Mk Ms])
-        (thread (λ () (write (sync (hear Mk)))))))
-    (sync (broadcast M Ms))
-    (for-each sync (cons t ts))
+    (define M1 (make-mediator))
+    (define M2 (make-mediator))
+    (sync
+     (async-void
+      (thread (λ () (sync (say M 1))))
+      (thread (λ () (sync (broadcast M (list M1 M2)))))
+      (thread (λ () (write (sync (hear M1)))))
+      (thread (λ () (write (sync (hear M2)))))))
   ]
 }
