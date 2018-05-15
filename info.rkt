@@ -8,6 +8,7 @@
 
 (define build-deps
   '("draw-lib"
+    "event-lang"
     "pict-lib"
     "racket-doc"
     "rackunit-lib"
