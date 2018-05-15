@@ -6,6 +6,8 @@
  racket/function
  racket/list)
 
+(provide (all-defined-out))
+
 ;; Simple Exchanges
 
 (define (say-to m . vs)
