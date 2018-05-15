@@ -133,7 +133,7 @@ input.
 
   @example[
     (define M
-      (on-offer*
+      (bind-offer
        (make-mediator)
        (λ (next) (λ vs (apply next (map add1 vs))))))
     (eval:alts
@@ -144,7 +144,7 @@ input.
 
   @example[
     (define M
-      (on-offer*
+      (bind-offer
        (make-mediator)
        (λ _ (λ _ (handle-evt always-evt (λ _ 0))))))
     (sync (offer M 1 2 3))
@@ -158,9 +158,9 @@ input.
 
   @example[
     (define M
-      (on-accept*
+      (bind-accept
        (make-mediator)
-       (λ (next) (handle-evt next (λ vs (map add1 vs))))))
+       (λ (next) (λ () (handle-evt (next) (λ vs (map add1 vs)))))))
     (eval:alts
      (thread (λ () (sync (offer M 1 2 3))))
      (void (thread (λ () (sync (offer M 1 2 3))))))
@@ -169,15 +169,15 @@ input.
 
   @example[
     (define M
-      (on-accept*
+      (bind-accept
        (make-mediator)
-       (λ _ (handle-evt always-evt (λ _ 0)))))
+       (λ _ (λ _ (handle-evt always-evt (λ _ 0))))))
     (sync (accept M))
   ]
 }
 
 @defproc[
-  (on-put*
+  (bind-put
    [m mediator?]
    [f (-> (unconstrained-domain-> evt?)
           (unconstrained-domain-> evt?))])
@@ -189,7 +189,7 @@ input.
 
   @example[
     (define M
-      (on-put*
+      (bind-put
        (make-mediator)
        (λ (next) (λ vs (apply next (map add1 vs))))))
     (eval:alts
@@ -200,23 +200,23 @@ input.
 
   @example[
     (define M
-      (on-put*
+      (bind-put
        (make-mediator)
        (λ _ (λ _ (handle-evt always-evt (λ _ 0))))))
     (sync (put M 1 2 3))
   ]
 }
 
-@defproc[(on-get* [m mediator?] [f (-> evt? evt?)]) mediator?]{
+@defproc[(bind-get [m mediator?] [f (-> evt? evt?)]) mediator?]{
 
   Returns a copy of @var[m] with a new get-@tech{handler} created by applying
   @var[f] to the old @tech{handler}.
 
   @example[
     (define M
-      (on-get*
+      (bind-get
        (make-mediator)
-       (λ (next) (handle-evt next (λ vs (map add1 vs))))))
+       (λ (next) (λ _ (handle-evt (next) (λ vs (map add1 vs)))))))
     (eval:alts
      (thread (λ () (sync (put M 1 2 3))))
      (void (thread (λ () (sync (put M 1 2 3))))))
@@ -225,9 +225,9 @@ input.
 
   @example[
     (define M
-      (on-get*
+      (bind-get
        (make-mediator)
-       (λ _ (handle-evt always-evt (λ _ 0)))))
+       (λ _ (λ _ (handle-evt always-evt (λ _ 0))))))
     (sync (get M))
   ]
 }
