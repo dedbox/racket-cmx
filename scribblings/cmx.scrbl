@@ -5,6 +5,7 @@
 
 @(require
   "diagram.rkt"
+  event/base
   (only-in cmx/mediator handler/c)
   racket/contract/base
   racket/sandbox
