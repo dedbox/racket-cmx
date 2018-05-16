@@ -20,13 +20,12 @@
    (apply tech #:doc '(lib "scribblings/reference/reference.scrbl") args))
 
 @(define cmx-evaluator
-   (parameterize
+   (call-with-trusted-sandbox-configuration
+    (λ ()
+      (parameterize
        ([sandbox-output 'string]
-        [sandbox-error-output 'string]
-        [sandbox-memory-limit 50]
-        [sandbox-eval-limits '(30 50)]
-        [sandbox-make-inspector current-inspector])
-     (make-evaluator 'racket #:requires '(cmx cmx/mediator event))))
+        [sandbox-error-output 'string])
+       (make-evaluator 'racket #:requires '(cmx cmx/mediator event))))))
 
 @(define-syntax-rule (example expr ...)
    @examples[
