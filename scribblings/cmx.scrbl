@@ -82,20 +82,20 @@ exchanged.
   determined by four @tech{handler} functions.
 
   @itemlist[
-    @item{The @var[offer-handler] takes any number of arguments. Returns a
-      @rtech{synchronizable event} that puts the argument list into the
-      @emph{control channel} of the @tech{mediator}.}
-    @item{The @var[accept-handler] takes no arguments. Returns a
-      @rtech{synchronizable event} that gets an argument list from the
-      @emph{control channel} of the @tech{mediator}. The
-      @rtech{synchronization result} is the elements of the argument list.}
-    @item{The @var[put-handler] takes any number of arguments. Returns a
-      @rtech{synchronizable event} that puts the argument list into the
-      @emph{data channel} of the @tech{mediator}.}
-    @item{The @var[get-handler] takes no arguments. Returns a
-      @rtech{synchronizable event} that gets an argument list from the
-      @emph{data channel} of the @tech{mediator}. The @rtech{synchronization
-      result} is the elements of the argument list.}
+    @item{The @deftech{offer-handler} takes any number of arguments and
+      returns a @rtech{synchronizable event} that puts the argument list into
+      the control channel of the @tech{mediator}.}
+    @item{The @deftech{accept-handler} takes no arguments and returns a
+      @rtech{synchronizable event} that gets an argument list from the control
+      channel of the @tech{mediator}. The @rtech{synchronization result} is
+      the elements of the argument list.}
+    @item{The @deftech{put-handler} takes any number of arguments and returns
+      a @rtech{synchronizable event} that puts the argument list into the data
+      channel of the @tech{mediator}.}
+    @item{The @deftech{get-handler} takes no arguments and returns a
+      @rtech{synchronizable event} that gets an argument list from the data
+      channel of the @tech{mediator}. The @rtech{synchronization result} is
+      the elements of the argument list.}
   ]
 }
 
@@ -111,19 +111,18 @@ exchanged.
   @defproc[(offer* [m mediator?] [vs (listof any/c)]) evt?]
 )]{
 
-  Returns a @rtech{synchronizable event} that applies the
-  @racket[mediator-offer-handler] of @var[m] to @var[vs] and then blocks until
-  a receiver is ready to accept the results through the control channel of
-  @var[m].
+  Applies the @tech{offer-handler} of @var[m] to @var[v]s and returns a
+  @rtech{synchronizable event} which by default provides @var[v]s through the
+  control channel of @var[m].
 
 }
 
 @defproc[(accept [m mediator?]) evt?]{
 
-  Returns a @rtech{synchronizable event} that blocks until a sender is ready
-  to provide values through the control channel of @var[m], applies the
-  @racket[mediator-accept-handler] of @var[m] to the provided values, and uses
-  the results as its @rtech{synchronization result}.
+  Returns a @rtech{synchronizable event} which by default blocks until values
+  are provided through the control channel of @var[m], applies the
+  @tech{accept-handler} of @var[m] to the provided values, and produces the
+  results as its @rtech{synchronization result}.
 
 }
 
@@ -132,18 +131,18 @@ exchanged.
   @defproc[(put* [m mediator?] [vs (listof any/c)]) evt?]
 )]{
 
-  Returns a @rtech{synchronizable event} that applies the
-  @racket[mediator-put-handler] of @var[m] to @var[vs] and then blocks until a
-  receiver is ready to accept the results through the data channel of @var[m].
+  Applies the @tech{put-handler} of @var[m] to @var[v]s and returns a
+  @rtech{synchronizable event} which by default provides @var[v]s through the
+  data channel of @var[m].
 
 }
 
 @defproc[(get [m mediator?]) evt?]{
 
-  Returns a @rtech{synchronizable event} that blocks until a sender is ready
-  to provide values through the data channel of @var[m], applies the
-  @racket[mediator-get-handler] of @var[m] to the provided values, and uses the results
-  as its @rtech{synchronization result}.
+  Returns a @rtech{synchronizable event} which by default blocks until values
+  are provided through the data channel of @var[m], applies the
+  @tech{get-handler} of @var[m] to the provided values, and produces the
+  results as its @rtech{synchronization result}.
 
 }
 
@@ -157,8 +156,8 @@ exchanged.
   mediator?
 ]{
 
-  Returns a copy of @var[m] with a new @racket[mediator-offer-handler] created
-  by applying @var[f] to the old @racket[mediator-offer-handler].
+  Returns a copy of @var[m] with a new @tech{offer-handler} created by
+  applying @var[f] to the old @tech{offer-handler}.
 
   @example[
     (define M
@@ -172,24 +171,21 @@ exchanged.
   ]
 
   @example[
-    (define M
-      (bind-offer
-       (make-mediator)
-       (λ _ (λ _ (handle-evt always-evt (λ _ 0))))))
+    (define M (bind-offer (make-mediator) (λ _ (λ _ (pure 0)))))
     (code:line (sync (offer M 1 2 3)) (code:comment "no accept"))
   ]
 }
 
 @defproc[(bind-accept [m mediator?] [f (-> evt? evt?)]) mediator?]{
 
-  Returns a copy of @var[m] with a new @racket[mediator-accept-handler]
-  created by applying @var[f] to the old @racket[mediator-accept-handler].
+  Returns a copy of @var[m] with a new @tech{accept-handler} created by
+  applying @var[f] to the old @tech{accept-handler}.
 
   @example[
     (define M
       (bind-accept
        (make-mediator)
-       (λ (next) (λ () (handle-evt (next) (λ vs (map add1 vs)))))))
+       (λ (next) (λ () (fmap (λ vs (map add1 vs)) (next))))))
     (eval:alts
      (thread (λ () (sync (offer M 1 2 3))))
      (void (thread (λ () (sync (offer M 1 2 3))))))
@@ -197,10 +193,7 @@ exchanged.
   ]
 
   @example[
-    (define M
-      (bind-accept
-       (make-mediator)
-       (λ _ (λ _ (handle-evt always-evt (λ _ 0))))))
+    (define M (bind-accept (make-mediator) (λ _ (λ _ (pure 0)))))
     (code:line (sync (accept M)) (code:comment "no offer"))
   ]
 }
@@ -213,8 +206,8 @@ exchanged.
   mediator?
 ]{
 
-  Returns a copy of @var[m] with a new @racket[mediator-put-handler] created
-  by applying @var[f] to the old @racket[mediator-put-handler].
+  Returns a copy of @var[m] with a new @tech{put-handler} created by applying
+  @var[f] to the old @tech{put-handler}.
 
   @example[
     (define M
@@ -228,34 +221,28 @@ exchanged.
   ]
 
   @example[
-    (define M
-      (bind-put
-       (make-mediator)
-       (λ _ (λ _ (handle-evt always-evt (λ _ 0))))))
+    (define M (bind-put (make-mediator) (λ _ (λ _ (pure 0)))))
     (code:line (sync (put M 1 2 3)) (code:comment "no get"))
   ]
 }
 
 @defproc[(bind-get [m mediator?] [f (-> evt? evt?)]) mediator?]{
 
-  Returns a copy of @var[m] with a new @racket[mediator-get-handler] created
-  by applying @var[f] to the old @racket[mediator-get-handler].
+  Returns a copy of @var[m] with a new @tech{get-handler} created by applying
+  @var[f] to the old @tech{get-handler}.
 
   @example[
     (define M
       (bind-get
        (make-mediator)
-       (λ (next) (λ _ (handle-evt (next) (λ vs (map add1 vs)))))))
+       (λ (next) (λ _ (fmap (λ vs (map add1 vs)) (next))))))
     (eval:alts (thread (λ () (sync (put M 1 2 3))))
                (void (thread (λ () (sync (put M 1 2 3))))))
     (sync (get M))
   ]
 
   @example[
-    (define M
-      (bind-get
-       (make-mediator)
-       (λ _ (λ _ (handle-evt always-evt (λ _ 0))))))
+    (define M (bind-get (make-mediator) (λ _ (λ _ (pure 0)))))
     (code:line (sync (get M)) (code:comment "no put"))
   ]
 }
@@ -312,7 +299,7 @@ exchanged.
 
 @defproc[(on-get [m mediator?] [f procedure?]) mediator?]{
 
-  Returns a copy of @var[m] extended to apply @var[f] to any values got
+  Returns a copy of @var[m] extended to apply @var[f] to any values gotten
   through @var[m]. When a @tech{mediator} has more than one @racket[on-get]
   hook, the hooks are applied in order.
 
@@ -330,8 +317,8 @@ exchanged.
 
 @defmodule[cmx]
 
-An @deftech{exchange} is a process by which some number of threads transmit
-information through one or more @tech{mediators}. An exchange is
+An @deftech{exchange} is a process by which some number of threads transfer
+values through one or more @tech{mediators}. An exchange is
 @deftech{push-based} when the sender initiates with a passive receiver, and
 @deftech{pull-based} when the receiver initiates with a passive sender.
 
