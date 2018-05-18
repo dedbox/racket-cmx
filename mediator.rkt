@@ -29,7 +29,7 @@
   (-> (unconstrained-domain-> evt?)
       (unconstrained-domain-> evt?)))
 
-(struct mediator (offer accept put get))
+(struct mediator (offer-handler accept-handler put-handler get-handler))
 
 (define (make-mediator)
   (define ctrl-ch (make-channel))
@@ -46,48 +46,48 @@
   (offer* m vs))
 
 (define (offer* m vs)
-  (apply (mediator-offer m) vs))
+  (apply (mediator-offer-handler m) vs))
 
 (define (accept m)
-  ((mediator-accept m)))
+  ((mediator-accept-handler m)))
 
 (define (put m . vs)
   (put* m vs))
 
 (define (put* m vs)
-  (apply (mediator-put m) vs))
+  (apply (mediator-put-handler m) vs))
 
 (define (get m)
-  ((mediator-get m)))
+  ((mediator-get-handler m)))
 
 ;; Handlers
 
 (define (bind-offer m f)
-  (define next (mediator-offer m))
-  (struct-copy mediator m [offer (λ vs (apply (f next) vs))]))
+  (define handler (mediator-offer-handler m))
+  (struct-copy mediator m [offer-handler (λ vs (apply (f handler) vs))]))
 
 (define (bind-accept m f)
-  (struct-copy mediator m [accept (f (mediator-accept m))]))
+  (struct-copy mediator m [accept-handler (f (mediator-accept-handler m))]))
 
 (define (bind-put m f)
-  (struct-copy mediator m [put (f (mediator-put m))]))
+  (struct-copy mediator m [put-handler (f (mediator-put-handler m))]))
 
 (define (bind-get m f)
-  (struct-copy mediator m [get (f (mediator-get m))]))
+  (struct-copy mediator m [get-handler (f (mediator-get-handler m))]))
 
 ;; Hooks
 
 (define (on-offer m f)
-  (bind-offer m (λ (next) (λ vs (bind (pure (apply f vs)) next)))))
+  (bind-offer m (λ (handler) (λ vs (bind (pure (apply f vs)) handler)))))
 
 (define (on-accept m f)
-  (bind-accept m (λ (next) (λ () (fmap f (next))))))
+  (bind-accept m (λ (handler) (λ () (fmap f (handler))))))
 
 (define (on-put m f)
-  (bind-put m (λ (next) (λ vs (bind (pure (apply f vs)) next)))))
+  (bind-put m (λ (handler) (λ vs (bind (pure (apply f vs)) handler)))))
 
 (define (on-get m f)
-  (bind-get m (λ (next) (λ () (fmap f (next))))))
+  (bind-get m (λ (handler) (λ () (fmap f (handler))))))
 
 ;;; Unit Tests
 
