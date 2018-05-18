@@ -67,10 +67,32 @@ input.
 
 }
 
-@defproc[(mediator? [v any/c]) boolean?]{
+@defstruct*[
+  mediator ([offer-handler handler/c]
+            [accept-handler handler/c]
+            [put-handler handler/c]
+            [get-handler handler/c])
+]{
 
-  Returns @racket[#t] if @var[v] is a @tech{mediator}, @racket[#f] otherwise.
+  A structure type for @tech{mediators}. The behavior of a mediator is
+  determined by four @tech{handler} functions.
 
+  @itemlist[
+    @item{The @var[offer-handler] takes any number of arguments. Returns a
+      @rtech{synchronizable event} that puts the argument list into the
+      @emph{control channel} of the @tech{mediator}.}
+    @item{The @var[accept-handler] takes no arguments. Returns a
+      @rtech{synchronizable event} that gets an argument list from the
+      @emph{control channel} of the @tech{mediator}. The
+      @rtech{synchronization result} is the elements of the argument list.}
+    @item{The @var[put-handler] takes any number of arguments. Returns a
+      @rtech{synchronizable event} that puts the argument list into the
+      @emph{data channel} of the @tech{mediator}.}
+    @item{The @var[get-handler] takes no arguments. Returns a
+      @rtech{synchronizable event} that gets an argument list from the
+      @emph{data channel} of the @tech{mediator}. The @rtech{synchronization
+      result} is the elements of the argument list.}
+  ]
 }
 
 @defproc[(make-mediator) mediator?]{
@@ -85,9 +107,10 @@ input.
   @defproc[(offer* [m mediator?] [vs (listof any/c)]) evt?]
 )]{
 
-  Returns a @rtech{synchronizable event} that applies the offer-handler of
-  @var[m] to @var[vs] and then blocks until a receiver is ready to accept the
-  results through the control channel of @var[m].
+  Returns a @rtech{synchronizable event} that applies the
+  @racket[mediator-offer-handler] of @var[m] to @var[vs] and then blocks until
+  a receiver is ready to accept the results through the control channel of
+  @var[m].
 
 }
 
@@ -95,8 +118,8 @@ input.
 
   Returns a @rtech{synchronizable event} that blocks until a sender is ready
   to provide values through the control channel of @var[m], applies the
-  accept-handler of @var[m] to the provided values, and uses the results as
-  its @rtech{synchronization result}.
+  @racket[mediator-accept-handler] of @var[m] to the provided values, and uses
+  the results as its @rtech{synchronization result}.
 
 }
 
@@ -105,9 +128,9 @@ input.
   @defproc[(put* [m mediator?] [vs (listof any/c)]) evt?]
 )]{
 
-  Returns a @rtech{synchronizable event} that applies the put-handler of
-  @var[m] to @var[vs] and then blocks until a receiver is ready to accept the
-  results through the data channel of @var[m].
+  Returns a @rtech{synchronizable event} that applies the
+  @racket[mediator-put-handler] of @var[m] to @var[vs] and then blocks until a
+  receiver is ready to accept the results through the data channel of @var[m].
 
 }
 
@@ -115,8 +138,8 @@ input.
 
   Returns a @rtech{synchronizable event} that blocks until a sender is ready
   to provide values through the data channel of @var[m], applies the
-  get-handler of @var[m] to the provided values, and uses the results as its
-  @rtech{synchronization result}.
+  @racket[mediator-get-handler] of @var[m] to the provided values, and uses the results
+  as its @rtech{synchronization result}.
 
 }
 
@@ -130,8 +153,8 @@ input.
   mediator?
 ]{
 
-  Returns a copy of @var[m] with a new offer-@tech{handler} created by
-  applying @var[f] to the old @tech{handler}.
+  Returns a copy of @var[m] with a new @racket[mediator-offer-handler] created
+  by applying @var[f] to the old @racket[mediator-offer-handler].
 
   @example[
     (define M
@@ -155,8 +178,8 @@ input.
 
 @defproc[(bind-accept [m mediator?] [f (-> evt? evt?)]) mediator?]{
 
-  Returns a copy of @var[m] with a new accept-@tech{handler} created by
-  applying @var[f] to the old @tech{handler}.
+  Returns a copy of @var[m] with a new @racket[mediator-accept-handler]
+  created by applying @var[f] to the old @racket[mediator-accept-handler].
 
   @example[
     (define M
@@ -186,8 +209,8 @@ input.
   mediator?
 ]{
 
-  Returns a copy of @var[m] with a new put-@tech{handler} created by applying
-  @var[f] to the old @tech{handler}.
+  Returns a copy of @var[m] with a new @racket[mediator-put-handler] created
+  by applying @var[f] to the old @racket[mediator-put-handler].
 
   @example[
     (define M
@@ -211,8 +234,8 @@ input.
 
 @defproc[(bind-get [m mediator?] [f (-> evt? evt?)]) mediator?]{
 
-  Returns a copy of @var[m] with a new get-@tech{handler} created by applying
-  @var[f] to the old @tech{handler}.
+  Returns a copy of @var[m] with a new @racket[mediator-get-handler] created
+  by applying @var[f] to the old @racket[mediator-get-handler].
 
   @example[
     (define M

@@ -8,7 +8,11 @@
 (provide
  (contract-out
   [handler/c contract?]
-  [mediator? predicate/c]
+  [struct mediator
+    ([offer-handler handler/c]
+     [accept-handler handler/c]
+     [put-handler handler/c]
+     [get-handler handler/c])]
   [make-mediator (-> mediator?)]
   [offer (-> mediator? any/c ... evt?)]
   [offer* (-> mediator? (listof any/c) evt?)]
