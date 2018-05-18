@@ -348,7 +348,9 @@ receiver.
 
 @deftogether[(
   @defproc[(say [m mediator?] [v any/c] ...) evt?]
-  @defproc[(say* [m mediator?] [vs (listof any/c)]) evt?]
+  @defproc[(say* [m mediator?]
+                 [vs (listof any/c)]
+                 [m0 mediator? (make-mediator)]) evt?]
 )]{
 
   @(offer "m" "m0")
@@ -356,10 +358,11 @@ receiver.
   @(put "m*" "vs")
 
   Returns a @rtech{synchronizable event} that performs the initiating side of
-  a simple @tech{push-based} @tech{exchange}. Offers a base @tech{mediator} to
-  @var[m], accepts a final @tech{mediator} from the base, and becomes
-  @rtech{ready for synchronization} when the receiver is ready to accept
-  @var[vs] from the data channel of the final @tech{mediator}.
+  a simple @tech{push-based} @tech{exchange}. Offers @var[m0] to @var[m],
+  accepts a final @tech{mediator} @racketid[m*] from @var[m0], and puts
+  @var[v]s into @racketid[m*]. Becomes @rtech{ready for synchronization} when
+  the receiver is ready to accept @var[vs] from the data channel of
+  @racketid[m*].
 
   @example[
     (define M (make-mediator))
@@ -369,7 +372,7 @@ receiver.
   ]
 }
 
-@defproc[(hear [m mediator?]) evt?]{
+@defproc[(hear [m mediator?] [make-m* (-> mediator? mediator?) values]) evt?]{
 
   @(accept "m" "m0")
   @(offer "m0" "m*")
@@ -377,25 +380,28 @@ receiver.
 
   Returns a @rtech{synchronizable event} that performs the passive side of a
   simple @tech{push-based} @tech{exchange}. Accepts a base @tech{mediator}
-  from @var[m], offers a final @tech{mediator} to the base, and becomes
-  @rtech{ready for synchronization} when the sender is ready to provide values
-  through the data channel of the final @tech{mediator}. Uses the provided
-  values as its @rtech{synchronization result}.
+  @racketid[m0] from @var[m], creates a final @tech{mediator} @racketid[m*] by
+  applying @var[make-m*] to @racketid[m0], offers @var[m*] to @racketid[m0],
+  and gets values from @racketid[m*]. Becomes @rtech{ready for
+  synchronization} when the sender is ready to provide values through the data
+  channel of @racketid[m*]. The @rtech{synchronization result} is the provided
+  values.
 
 }
 
-@defproc[(ask [m mediator?]) evt?]{
+@defproc[(ask [m mediator?] [m0 mediator? (make-mediator)]) evt?]{
 
   @(offer "m" "m0")
   @(accept "m0" "m*")
   @(get "m*" "vs")
 
   Returns a @rtech{synchronizable event} that performs the initiating side of
-  a simple @tech{pull-based} @tech{exchange}. Offers a base @tech{mediator} to
-  @var[m], accepts a final @tech{mediator} from the base, and becomes
-  @rtech{ready for synchronization} when the sender is ready to provide values
-  through the data channel of the final @tech{mediator}. Uses the provided
-  values as its @rtech{synchronization result}.
+  a simple @tech{pull-based} @tech{exchange}. Offers a base @tech{mediator}
+  @racketid[m0] to @var[m], accepts a final @tech{mediator} @racketid[m*] from
+  @racketid[m0], and gets values from @racketid[m*]. Becomes @rtech{ready for
+  synchronization} when the sender is ready to provide values through the data
+  channel of the final @tech{mediator}. The @rtech{synchronization result} is
+  the provided values.
 
   @example[
     (define M (make-mediator))
@@ -416,9 +422,11 @@ receiver.
 
   Returns a @rtech{synchronizable event} that performs the passive side of a
   simple @tech{pull-based} @tech{exchange}. Accepts a base @tech{mediator}
-  from @var[m], offers a final @tech{mediator} to the base, and becomes
-  @rtech{ready for synchronization} when the receiver is ready to accept
-  @var[vs] from the data channel of the final @tech{mediator}.
+  @racketid[m0] from @var[m], creates a final @tech{mediator} @racketid[m*] by
+  applying @var[make-m*] to @racketid[m0], offers @racketid[m*] to
+  @racketid[m0], and puts @var[v]s into @racketid[m*]. Becomes @rtech{ready
+  for synchronization} when the receiver is ready to accept @var[v]s from the
+  data channel of @racketid[m*].
 
 }
 

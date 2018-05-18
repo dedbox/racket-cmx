@@ -4,6 +4,7 @@
  cmx/mediator
  event
  event/base
+ racket/dict
  racket/function
  racket/list)
 
@@ -14,22 +15,26 @@
 (define (say m . vs)
   (say* m vs))
 
-(define (say* m vs)
-  (define m0 (make-mediator))
+(define (say* m vs [m0 (make-mediator)])
   (seq (offer m m0) (bind (accept m0) (curryr put* vs))))
 
-(define (hear m)
-  (event-let ([m* (accept m)]) (offer m* m*) (get m*)))
+(define (hear m [make-m* values])
+  (event-let
+   ([m0 (accept m)])
+   (let ([m* (make-m* m0)])
+     (seq (offer m0 m*) (get m*)))))
 
-(define (ask m)
-  (define m0 (make-mediator))
+(define (ask m [m0 (make-mediator)])
   (seq (offer m m0) (bind (accept m0) get)))
 
 (define (tell m . vs)
   (tell* m vs))
 
-(define (tell* m vs)
-  (event-let ([m0 (accept m)]) (offer m0 m0) (put* m0 vs)))
+(define (tell* m vs [make-m* values])
+  (event-let
+   ([m0 (accept m)])
+   (let ([m* (make-m* m0)])
+     (seq (offer m0 m0) (put* m0 vs)))))
 
 ;; Input
 
