@@ -34,15 +34,19 @@
      expr ...
    ])
 
-This package introduces a calculus of mediated exchange in which one can
-naturally express synchronizable rendezvous events for any number of
-participants. The participants of an exchange may be arbitrarily linked, and
-an exchange may carry information which changes that linkage.
+This package implements an @racketmodname[event]-based calculus of mediated
+@tech{exchange} for expressing synchronizable rendezvous events with any
+number of participants. The participants of an @tech{exchange} may be
+arbitrarily linked, and an @tech{exchange} may carry information which changes
+that linkage.
 
-The calculus serves as a theoretical foundation for a set of exchangers
-provided by the @racketmodname[cmx] module. The @racketmodname[cmx/mediator]
-module provides support for creating new kinds of exchangers based on the
-calculus.
+The calculus models a discrete communication as a series of rendezvous
+operations carried out by @tech{mediators}, programmable forwarding constructs
+capable of implementing and extending synchronous rendezvous operations.
+
+The included collection of @tech{mediator}-based @tech{exchanges} follows a
+two-phase protocol that supports any number of senders and receivers with
+precise control over the moment of synchronization.
 
 @section{Mediator}
 
@@ -54,8 +58,8 @@ another for transferring data. Concretely, a mediator is a set of handlers. A
 @deftech{handler} is a function that implements, extends, or overrides one of
 the four basic @deftech{mediated operations}: @racket[offer], @racket[accept],
 @racket[put], and @racket[get]. A @deftech{hook} is a function that extends
-the behavior of a mediated operation by returning a value derived from its
-input.
+the behavior of a mediated operation by transforming the values being
+exchanged.
 
 @defthing[
   handler/c contract?
@@ -341,8 +345,8 @@ receiver.
     accepts.}
   @item{The passive side offers a final mediator through the base mediator and
     the initiating side accepts.}
-  @item{One side puts a set of values into the final mediator as the other
-    side gets them out.}
+  @item{One side puts values into the final mediator as the other side gets
+    the values out.}
   #:style 'ordered
 ]
 
@@ -430,6 +434,8 @@ receiver.
 
 }
 
+@subsection{Forwarding exchanges}
+
 @defproc[(forward [m1 mediator?] [m2 mediator?]) evt?]{
 
   @(accept "m1" "m0")
@@ -451,14 +457,14 @@ receiver.
   ]
 }
 
-@subsection{Multiple senders}
+@subsection{Multi-sender exchanges}
 
 @defproc[(collect [m mediator?] [N exact-nonnegative-integer?]) evt?]{
 
   Returns a @rtech{synchronizable event} that performs the passive side of a
   simple @tech{push-based} @tech{exchange} iteratively. Becomes @rtech{ready
-  for synchronization} after @var[N] values are received. Uses a list of the
-  received values as its @rtech{synchronization result}.
+  for synchronization} after @var[N] values are received. The
+  @rtech{synchronization result} is a list of the received values.
 
   @example[
     (define M (make-mediator))
@@ -470,10 +476,10 @@ receiver.
 @defproc[(quorum [m mediator?] [N exact-nonnegative-integer?]) evt?]{
 
   Returns a @rtech{synchronizable event} that performs the passive side of a
-  simple @tech{push-based} @tech{exchange} multiple times simultaneously.
-  Blocks until @var[N] senders are ready to provide values. Becomes
-  @rtech{ready for synchronization} when the exchange is complete. The
-  @rtech{synchronization result} is the provided values.
+  simple @tech{push-based} @tech{exchange} many times concurrently. Blocks
+  until @var[N] senders are ready to provide values. Becomes @rtech{ready for
+  synchronization} when the exchange is complete. The @rtech{synchronization
+  result} is the provided values.
 
   @example[
     (define M (make-mediator))
@@ -482,13 +488,13 @@ receiver.
   ]
 }
 
-@subsection{Multiple receivers}
+@subsection{Multi-receiver exchanges}
 
 @defproc[(broadcast [m mediator?] [ms (listof mediator?)]) evt?]{
 
   Returns a @rtech{synchronizable event} that performs the initiating side of
-  a simple @tech{push-based} @tech{exchange} multiple times simultaneously.
-  Blocks a sender on @var[m] until all @var[ms] have a receiver ready. Becomes
+  a simple @tech{push-based} @tech{exchange} many times concurrently. Blocks
+  the sender on @var[m] until all @var[ms] have a receiver ready. Becomes
   @rtech{ready for synchronization} when the exchange is complete.
 
   @example[
