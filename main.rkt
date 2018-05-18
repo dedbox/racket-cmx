@@ -80,44 +80,38 @@
 (module+ test
   (require rackunit)
 
-  (test-case
-      "say"
+  (test-case "say"
     (define m (make-mediator))
     (define t (thread (λ () (for ([j 10]) (check = (sync (hear m)) j)))))
     (for ([i 10]) (check-pred void? (sync (say m i))))
     (void (sync t)))
 
-  (test-case
-      "hear"
+  (test-case "hear"
     (define m (make-mediator))
     (define t (thread (λ () (for ([i 10]) (sync (say m i))))))
     (for ([j 10]) (check = (sync (hear m)) j))
     (void (sync t)))
 
-  (test-case
-      "ask"
+  (test-case "ask"
     (define m (make-mediator))
     (define t (thread (λ () (for ([i 10]) (sync (tell m i))))))
     (for ([j 10]) (check = (sync (ask m)) j))
     (void (sync t)))
 
-  (test-case
-      "tell"
+  (test-case "tell"
     (define m (make-mediator))
     (define t (thread (λ () (for ([j 10]) (check = (sync (ask m)) j)))))
     (for ([i 10]) (check-pred void? (sync (tell m i))))
     (void (sync t)))
 
-  (test-case
-      "collect"
+  (test-case "collect"
     (define m (make-mediator))
     (define t (thread (λ () (for ([i 10]) (sync (say m i))))))
     (check equal? (sync (collect m 5)) '(0 1 2 3 4))
     (check equal? (sync (collect m 5)) '(5 6 7 8 9))
     (void (sync t)))
 
-  (test-case
-      "quorum"
+  (test-case "quorum"
     (define m (make-mediator))
     (define ts (for/list ([i 10]) (thread (λ () (sync (say m i))))))
     (define seen null)
@@ -134,8 +128,7 @@
     (check-quorum 4)
     (for-each sync ts))
 
-  (test-case
-      "forward"
+  (test-case "forward"
     (define m1 (make-mediator))
     (define m2 (make-mediator))
     (define t1 (thread (λ () (for ([i 10]) (sync (say m1 i))))))
@@ -158,4 +151,6 @@
     (define t1 (thread (λ () (check-pred void? (sync (say m 1))))))
     (define t2 (thread (λ () (check-pred void? (sync (broadcast m ms))))))
     (define ts (for/list ([mk ms]) (thread (λ () (check = (sync (hear mk)) 1)))))
-    (void (sync (async-list* t1 t2 ts)))))
+    (void (sync (async-list* t1 t2 ts))))
+
+  )
