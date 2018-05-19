@@ -36,7 +36,17 @@
    (let ([m* (make-m* m0)])
      (seq (offer m0 m0) (put* m0 vs)))))
 
-;; Input
+;; Forwarding
+
+(define (forward m1 m2)
+  (bind (accept m1) (curry offer m2)))
+
+(define (dispatch m ms)
+  (define (dispatch-put m0)
+    (bind-put m0 (λ (next) (λ (k . vs) (say* (dict-ref ms k) vs m0)))))
+  (event-let ([m0 (accept m)]) (offer m0 (dispatch-put m0))))
+
+;; Multiple senders
 
 (define (collect m N)
   (if (<= N 0)
@@ -48,12 +58,7 @@
    ([m0s (fmap* list (make-list N (accept m)))])
    (fmap list (async-set* (map (λ (m0) (seq (offer m0 m0) (get m0))) m0s)))))
 
-;; Control
-
-(define (forward m1 m2)
-  (bind (accept m1) (curry offer m2)))
-
-;; Output
+;; Multiple receivers
 
 (define (broadcast m ms)
   (define gate (make-gate))
@@ -104,6 +109,28 @@
     (for ([i 10]) (check-pred void? (sync (tell m i))))
     (void (sync t)))
 
+  (test-case "forward"
+    (define m1 (make-mediator))
+    (define m2 (make-mediator))
+    (define t1 (thread (λ () (for ([i 10]) (sync (say m1 i))))))
+    (define t2 (thread (λ () (for ([j 10]) (check = (sync (hear m2)) j)))))
+    (for ([_ 10]) (sync (forward m1 m2)))
+    (sync (fmap void t1 t2)))
+
+  (test-case "dispatch"
+    (define m (make-mediator))
+    (define ms
+      (hash
+       1 (make-mediator)
+       2 (make-mediator)))
+    (define t0 (thread (λ () (sync (seq (dispatch m ms) (dispatch m ms))))))
+    (define t1 (thread (λ () (sync (say m 1 'X)))))
+    (define t2 (thread (λ () (sync (say m 2 'Y)))))
+    (sync
+     (async-void
+      (thread (λ () (check eq? (sync (hear (hash-ref ms 1))) 'X)))
+      (thread (λ () (check eq? (sync (hear (hash-ref ms 2))) 'Y))))))
+
   (test-case "collect"
     (define m (make-mediator))
     (define t (thread (λ () (for ([i 10]) (sync (say m i))))))
@@ -127,14 +154,6 @@
     (check-quorum 3)
     (check-quorum 4)
     (for-each sync ts))
-
-  (test-case "forward"
-    (define m1 (make-mediator))
-    (define m2 (make-mediator))
-    (define t1 (thread (λ () (for ([i 10]) (sync (say m1 i))))))
-    (define t2 (thread (λ () (for ([j 10]) (check = (sync (hear m2)) j)))))
-    (for ([_ 10]) (sync (forward m1 m2)))
-    (sync (fmap void t1 t2)))
 
   (test-case
       "broadcast"
