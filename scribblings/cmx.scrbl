@@ -40,10 +40,189 @@ arbitrarily. The calculus models a discrete communication as a series of
 rendezvous operations carried out by programmable forwarding constructs called
 @tech{mediators}.
 
+@section{Exchanges}
 
-The included collection of @tech{mediator}-based @tech{exchanges} follows a
-two-phase protocol that supports any number of senders and receivers with
-precise control over the moment of synchronization.
+@defmodule[cmx]
+
+An @deftech{exchange} is a process by which some number of threads transfer
+values through one or more @tech{mediators}. An exchange is
+@deftech{push-based} when the sender initiates with a passive receiver, and
+@deftech{pull-based} when the receiver initiates with a passive sender.
+
+@subsection{Simple push-based exchanges}
+
+A simple exchange is a three-step process involving a single sender and
+receiver.
+
+@itemlist[
+  @item{The initiating side offers a base mediator and the passive side
+    accepts.}
+  @item{The passive side offers a final mediator through the base mediator and
+    the initiating side accepts.}
+  @item{One side puts values into the final mediator as the other side gets
+    the values out.}
+  #:style 'ordered
+]
+
+@deftogether[(
+  @defproc[(say [m mediator?] [v any/c] ...) evt?]
+  @defproc[(say* [m mediator?]
+                 [vs (listof any/c)]
+                 [m0 mediator? (make-mediator)]) evt?]
+)]{
+
+  @(offer "m" "m0")
+  @(accept "m0" "m*")
+  @(put "m*" "vs")
+
+  Returns a @rtech{synchronizable event} that performs the initiating side of
+  a simple @tech{push-based} @tech{exchange}. Offers @var[m0] to @var[m],
+  accepts a final @tech{mediator} @racketid[m*] from @var[m0], and puts
+  @var[v]s into @racketid[m*]. Becomes @rtech{ready for synchronization} when
+  the receiver is ready to accept @var[vs] from the data channel of
+  @racketid[m*].
+
+  @example[
+    (define M (make-mediator))
+    (eval:alts (thread (λ () (sync (say M 123))))
+               (void (thread (λ () (sync (say M 123))))))
+    (sync (hear M))
+  ]
+}
+
+@defproc[(hear [m mediator?] [make-m* (-> mediator? mediator?) values]) evt?]{
+
+  @(accept "m" "m0")
+  @(offer "m0" "m*")
+  @(get "m*" "vs")
+
+  Returns a @rtech{synchronizable event} that performs the passive side of a
+  simple @tech{push-based} @tech{exchange}. Accepts a base @tech{mediator}
+  @racketid[m0] from @var[m], creates a final @tech{mediator} @racketid[m*] by
+  applying @var[make-m*] to @racketid[m0], offers @var[m*] to @racketid[m0],
+  and gets values from @racketid[m*]. Becomes @rtech{ready for
+  synchronization} when the sender is ready to provide values through the data
+  channel of @racketid[m*]. The @rtech{synchronization result} is the provided
+  values.
+
+}
+
+@defproc[(ask [m mediator?] [m0 mediator? (make-mediator)]) evt?]{
+
+  @(offer "m" "m0")
+  @(accept "m0" "m*")
+  @(get "m*" "vs")
+
+  Returns a @rtech{synchronizable event} that performs the initiating side of
+  a simple @tech{pull-based} @tech{exchange}. Offers a base @tech{mediator}
+  @racketid[m0] to @var[m], accepts a final @tech{mediator} @racketid[m*] from
+  @racketid[m0], and gets values from @racketid[m*]. Becomes @rtech{ready for
+  synchronization} when the sender is ready to provide values through the data
+  channel of the final @tech{mediator}. The @rtech{synchronization result} is
+  the provided values.
+
+  @example[
+    (define M (make-mediator))
+    (eval:alts (thread (λ () (sync (tell M 123))))
+               (void (thread (λ () (sync (tell M 123))))))
+    (sync (ask M))
+  ]
+}
+
+@deftogether[(
+  @defproc[(tell [m mediator?] [v any/c] ...) evt?]
+  @defproc[(tell* [m mediator?] [vs (listof any/c)]) evy?]
+)]{
+
+  @(accept "m" "m0")
+  @(offer "m0" "m*")
+  @(put "m*" "vs")
+
+  Returns a @rtech{synchronizable event} that performs the passive side of a
+  simple @tech{pull-based} @tech{exchange}. Accepts a base @tech{mediator}
+  @racketid[m0] from @var[m], creates a final @tech{mediator} @racketid[m*] by
+  applying @var[make-m*] to @racketid[m0], offers @racketid[m*] to
+  @racketid[m0], and puts @var[v]s into @racketid[m*]. Becomes @rtech{ready
+  for synchronization} when the receiver is ready to accept @var[v]s from the
+  data channel of @racketid[m*].
+
+}
+
+@subsection{Forwarding exchanges}
+
+@defproc[(forward [m1 mediator?] [m2 mediator?]) evt?]{
+
+  @(accept "m1" "m0")
+  @(offer "m2" "m0")
+
+  Returns a @rtech{synchronizable event} that accepts a base @tech{mediator}
+  from @var[m1] and then offers it to @var[m2]. Becomes @rtech{ready for
+  synchronization} when @var[m2] accepts the base @tech{mediator}, possibly
+  before the exchange is completed.
+
+  @example[
+    (define M1 (make-mediator))
+    (define M2 (make-mediator))
+    (eval:alts (thread (λ () (sync (say M1 1))))
+               (void (thread (λ () (sync (say M1 1))))))
+    (eval:alts (thread (λ () (sync (forward M1 M2))))
+               (void (thread (λ () (sync (forward M1 M2))))))
+    (sync (hear M2))
+  ]
+}
+
+@subsection{Multi-sender exchanges}
+
+@defproc[(collect [m mediator?] [N exact-nonnegative-integer?]) evt?]{
+
+  Returns a @rtech{synchronizable event} that performs the passive side of a
+  simple @tech{push-based} @tech{exchange} iteratively. Becomes @rtech{ready
+  for synchronization} after @var[N] values are received. The
+  @rtech{synchronization result} is a list of the received values.
+
+  @example[
+    (define M (make-mediator))
+    (for ([i 10]) (thread (λ () (sync (say M i)))))
+    (sync (collect M 3))
+  ]
+}
+
+@defproc[(quorum [m mediator?] [N exact-nonnegative-integer?]) evt?]{
+
+  Returns a @rtech{synchronizable event} that performs the passive side of a
+  simple @tech{push-based} @tech{exchange} many times concurrently. Blocks
+  until @var[N] senders are ready to provide values. Becomes @rtech{ready for
+  synchronization} when the exchange is complete. The @rtech{synchronization
+  result} is the provided values.
+
+  @example[
+    (define M (make-mediator))
+    (for ([i 10]) (thread (λ () (sync (say M i)))))
+    (sync (quorum M 6))
+  ]
+}
+
+@subsection{Multi-receiver exchanges}
+
+@defproc[(broadcast [m mediator?] [ms (listof mediator?)]) evt?]{
+
+  Returns a @rtech{synchronizable event} that performs the initiating side of
+  a simple @tech{push-based} @tech{exchange} many times concurrently. Blocks
+  the sender on @var[m] until all @var[ms] have a receiver ready. Becomes
+  @rtech{ready for synchronization} when the exchange is complete.
+
+  @example[
+    (define M (make-mediator))
+    (define M1 (make-mediator))
+    (define M2 (make-mediator))
+    (sync
+     (async-void
+      (thread (λ () (sync (say M 1))))
+      (thread (λ () (sync (broadcast M (list M1 M2)))))
+      (thread (λ () (write (sync (hear M1)))))
+      (thread (λ () (write (sync (hear M2)))))))
+  ]
+}
 
 @section{Mediator}
 
@@ -307,189 +486,5 @@ exchanged.
     (eval:alts (thread (λ () (sync (put M null))))
                (void (thread (λ () (sync (put M null))))))
     (sync (get M))
-  ]
-}
-
-@section{Exchanges}
-
-@defmodule[cmx]
-
-An @deftech{exchange} is a process by which some number of threads transfer
-values through one or more @tech{mediators}. An exchange is
-@deftech{push-based} when the sender initiates with a passive receiver, and
-@deftech{pull-based} when the receiver initiates with a passive sender.
-
-@subsection{Simple push-based exchanges}
-
-A simple exchange is a three-step process involving a single sender and
-receiver.
-
-@itemlist[
-  @item{The initiating side offers a base mediator and the passive side
-    accepts.}
-  @item{The passive side offers a final mediator through the base mediator and
-    the initiating side accepts.}
-  @item{One side puts values into the final mediator as the other side gets
-    the values out.}
-  #:style 'ordered
-]
-
-@deftogether[(
-  @defproc[(say [m mediator?] [v any/c] ...) evt?]
-  @defproc[(say* [m mediator?]
-                 [vs (listof any/c)]
-                 [m0 mediator? (make-mediator)]) evt?]
-)]{
-
-  @(offer "m" "m0")
-  @(accept "m0" "m*")
-  @(put "m*" "vs")
-
-  Returns a @rtech{synchronizable event} that performs the initiating side of
-  a simple @tech{push-based} @tech{exchange}. Offers @var[m0] to @var[m],
-  accepts a final @tech{mediator} @racketid[m*] from @var[m0], and puts
-  @var[v]s into @racketid[m*]. Becomes @rtech{ready for synchronization} when
-  the receiver is ready to accept @var[vs] from the data channel of
-  @racketid[m*].
-
-  @example[
-    (define M (make-mediator))
-    (eval:alts (thread (λ () (sync (say M 123))))
-               (void (thread (λ () (sync (say M 123))))))
-    (sync (hear M))
-  ]
-}
-
-@defproc[(hear [m mediator?] [make-m* (-> mediator? mediator?) values]) evt?]{
-
-  @(accept "m" "m0")
-  @(offer "m0" "m*")
-  @(get "m*" "vs")
-
-  Returns a @rtech{synchronizable event} that performs the passive side of a
-  simple @tech{push-based} @tech{exchange}. Accepts a base @tech{mediator}
-  @racketid[m0] from @var[m], creates a final @tech{mediator} @racketid[m*] by
-  applying @var[make-m*] to @racketid[m0], offers @var[m*] to @racketid[m0],
-  and gets values from @racketid[m*]. Becomes @rtech{ready for
-  synchronization} when the sender is ready to provide values through the data
-  channel of @racketid[m*]. The @rtech{synchronization result} is the provided
-  values.
-
-}
-
-@defproc[(ask [m mediator?] [m0 mediator? (make-mediator)]) evt?]{
-
-  @(offer "m" "m0")
-  @(accept "m0" "m*")
-  @(get "m*" "vs")
-
-  Returns a @rtech{synchronizable event} that performs the initiating side of
-  a simple @tech{pull-based} @tech{exchange}. Offers a base @tech{mediator}
-  @racketid[m0] to @var[m], accepts a final @tech{mediator} @racketid[m*] from
-  @racketid[m0], and gets values from @racketid[m*]. Becomes @rtech{ready for
-  synchronization} when the sender is ready to provide values through the data
-  channel of the final @tech{mediator}. The @rtech{synchronization result} is
-  the provided values.
-
-  @example[
-    (define M (make-mediator))
-    (eval:alts (thread (λ () (sync (tell M 123))))
-               (void (thread (λ () (sync (tell M 123))))))
-    (sync (ask M))
-  ]
-}
-
-@deftogether[(
-  @defproc[(tell [m mediator?] [v any/c] ...) evt?]
-  @defproc[(tell* [m mediator?] [vs (listof any/c)]) evy?]
-)]{
-
-  @(accept "m" "m0")
-  @(offer "m0" "m*")
-  @(put "m*" "vs")
-
-  Returns a @rtech{synchronizable event} that performs the passive side of a
-  simple @tech{pull-based} @tech{exchange}. Accepts a base @tech{mediator}
-  @racketid[m0] from @var[m], creates a final @tech{mediator} @racketid[m*] by
-  applying @var[make-m*] to @racketid[m0], offers @racketid[m*] to
-  @racketid[m0], and puts @var[v]s into @racketid[m*]. Becomes @rtech{ready
-  for synchronization} when the receiver is ready to accept @var[v]s from the
-  data channel of @racketid[m*].
-
-}
-
-@subsection{Forwarding exchanges}
-
-@defproc[(forward [m1 mediator?] [m2 mediator?]) evt?]{
-
-  @(accept "m1" "m0")
-  @(offer "m2" "m0")
-
-  Returns a @rtech{synchronizable event} that accepts a base @tech{mediator}
-  from @var[m1] and then offers it to @var[m2]. Becomes @rtech{ready for
-  synchronization} when @var[m2] accepts the base @tech{mediator}, possibly
-  before the exchange is completed.
-
-  @example[
-    (define M1 (make-mediator))
-    (define M2 (make-mediator))
-    (eval:alts (thread (λ () (sync (say M1 1))))
-               (void (thread (λ () (sync (say M1 1))))))
-    (eval:alts (thread (λ () (sync (forward M1 M2))))
-               (void (thread (λ () (sync (forward M1 M2))))))
-    (sync (hear M2))
-  ]
-}
-
-@subsection{Multi-sender exchanges}
-
-@defproc[(collect [m mediator?] [N exact-nonnegative-integer?]) evt?]{
-
-  Returns a @rtech{synchronizable event} that performs the passive side of a
-  simple @tech{push-based} @tech{exchange} iteratively. Becomes @rtech{ready
-  for synchronization} after @var[N] values are received. The
-  @rtech{synchronization result} is a list of the received values.
-
-  @example[
-    (define M (make-mediator))
-    (for ([i 10]) (thread (λ () (sync (say M i)))))
-    (sync (collect M 3))
-  ]
-}
-
-@defproc[(quorum [m mediator?] [N exact-nonnegative-integer?]) evt?]{
-
-  Returns a @rtech{synchronizable event} that performs the passive side of a
-  simple @tech{push-based} @tech{exchange} many times concurrently. Blocks
-  until @var[N] senders are ready to provide values. Becomes @rtech{ready for
-  synchronization} when the exchange is complete. The @rtech{synchronization
-  result} is the provided values.
-
-  @example[
-    (define M (make-mediator))
-    (for ([i 10]) (thread (λ () (sync (say M i)))))
-    (sync (quorum M 6))
-  ]
-}
-
-@subsection{Multi-receiver exchanges}
-
-@defproc[(broadcast [m mediator?] [ms (listof mediator?)]) evt?]{
-
-  Returns a @rtech{synchronizable event} that performs the initiating side of
-  a simple @tech{push-based} @tech{exchange} many times concurrently. Blocks
-  the sender on @var[m] until all @var[ms] have a receiver ready. Becomes
-  @rtech{ready for synchronization} when the exchange is complete.
-
-  @example[
-    (define M (make-mediator))
-    (define M1 (make-mediator))
-    (define M2 (make-mediator))
-    (sync
-     (async-void
-      (thread (λ () (sync (say M 1))))
-      (thread (λ () (sync (broadcast M (list M1 M2)))))
-      (thread (λ () (write (sync (hear M1)))))
-      (thread (λ () (write (sync (hear M2)))))))
   ]
 }
