@@ -282,6 +282,12 @@ exchanged.
 
 }
 
+@defthing[void-mediator mediator?]{
+
+  A mediator that does nothing and always returns @(values void-const).
+
+}
+
 @deftogether[(
   @defproc[(offer [m mediator?] [v any/c] ...) evt?]
   @defproc[(offer* [m mediator?] [vs (listof any/c)]) evt?]
