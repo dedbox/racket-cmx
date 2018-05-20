@@ -273,6 +273,11 @@ exchanged.
       channel of the @tech{mediator}. The @rtech{synchronization result} is
       the elements of the argument list.}
   ]
+
+  These functions may be extended with @tech{hooks} and overridden with
+  @racket[bind-offer], @racket[bind-accept], @racket[bind-put], and
+  @racket[bind-get].
+
 }
 
 @defproc[(make-mediator) mediator?]{
