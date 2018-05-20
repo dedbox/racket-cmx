@@ -232,7 +232,7 @@ receiver.
     (define M2 (make-mediator))
     (sync
      (async-void
-      (thread (λ () (sync (say M 1))))
+      (thread (λ () (sync (say M 'X))))
       (thread (λ () (sync (broadcast M (list M1 M2)))))
       (thread (λ () (write (sync (hear M1)))))
       (thread (λ () (write (sync (hear M2)))))))
