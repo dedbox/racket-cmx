@@ -82,6 +82,22 @@
        (async-set* (map (curryr put v) m*s))
        (open-gate G))))))
 
+(define (multicast m ms [default (λ _ void-mediator)])
+  (define (deliver m0 mks vs)
+    (define md (make-mediator))
+    (thread (λ () (sync (say* md vs m0))))
+    (broadcast md mks))
+  (define (multi-put m0)
+    (bind-put
+     (make-mediator)
+     (λ (~put)
+       (λ (ks . vs)
+         (define mks (map (λ (k) (hash-ref ms k #f)) ks))
+         (if (or (null? mks) (member #f mks))
+             (default mks ks vs)
+             (deliver m0 mks vs))))))
+  (event-let ([m0 (accept m)]) (offer m0 (multi-put m0))))
+
 ;;; Unit Tests
 
 (module+ test
@@ -172,4 +188,26 @@
     (define ts (for/list ([mk ms]) (thread (λ () (check = (sync (hear mk)) 1)))))
     (void (sync (async-list* t1 t2 ts))))
 
-  )
+  (test-case "multicast"
+    (define m (make-mediator))
+    (define ms (hash 0 (make-mediator)
+                     1 (make-mediator)
+                     2 (make-mediator)))
+    (for* ([x 3] [y 3] #:when (not (= x y)))
+      (define t0 (thread (λ () (sync (say m (list x y) 'X+Y)))))
+      (define tx (thread (λ () (check eq? (sync (hear (hash-ref ms x))) 'X+Y))))
+      (define ty (thread (λ () (check eq? (sync (hear (hash-ref ms y))) 'X+Y))))
+      (void (sync (async-list (multicast m ms) t0 tx ty)))))
+
+  (test-case "multicast example"
+    (define M (make-mediator))
+    (define Ms (for/hash ([i 10]) (values i (make-mediator))))
+    (sync
+     (async-void
+      (thread (λ () (sync (say M '(1 3 4 7 8) 'X))))
+      (thread (λ () (check-pred void? (sync (multicast M Ms)))))
+      (thread (λ () (check eq? (sync (hear (hash-ref Ms 1))) 'X)))
+      (thread (λ () (check eq? (sync (hear (hash-ref Ms 3))) 'X)))
+      (thread (λ () (check eq? (sync (hear (hash-ref Ms 4))) 'X)))
+      (thread (λ () (check eq? (sync (hear (hash-ref Ms 7))) 'X)))
+      (thread (λ () (check eq? (sync (hear (hash-ref Ms 8))) 'X)))))))

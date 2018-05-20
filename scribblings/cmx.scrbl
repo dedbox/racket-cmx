@@ -239,6 +239,38 @@ receiver.
   ]
 }
 
+@defproc[
+  (multicast [m mediator?]
+             [ms (hash/c any/c mediator?)]
+             [default (-> (listof (or/c mediator? #f)) list? list? mediator?)
+                      (λ _ void-mediator)])
+  evt?
+]{
+
+  Returns a @rtech{synchronizable event} that forwards an exchange on @var[m]
+  to at least one of the @var[ms] or a @tech{mediator} created by
+  @var[default]. If the value being exchanged is a list and its first element
+  is a list of keys of @var[ms], the remaining elements are broadcasted to the
+  keyed @tech{mediators}. Otherwise, the operation is restarted on a
+  @tech{mediator} created by applying @var[default] to a list of the hash
+  lookup results, a list of the lookup keys, and a list of the remaining
+  elements of the value being exchanged.
+
+  @example[
+    (define M (make-mediator))
+    (define Ms (for/hash ([i 10]) (values i (make-mediator))))
+    (sync
+     (async-void
+      (thread (λ () (sync (say M '(1 3 4 7 8) 'X))))
+      (thread (λ () (sync (multicast M Ms))))
+      (thread (λ () (sync (hear (hash-ref Ms 1))) (write 1)))
+      (thread (λ () (sync (hear (hash-ref Ms 3))) (write 3)))
+      (thread (λ () (sync (hear (hash-ref Ms 4))) (write 4)))
+      (thread (λ () (sync (hear (hash-ref Ms 7))) (write 7)))
+      (thread (λ () (sync (hear (hash-ref Ms 8))) (write 8)))))
+  ]
+}
+
 @section{Mediator}
 
 @defmodule[cmx/mediator]
