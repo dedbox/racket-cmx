@@ -14,6 +14,7 @@
      [put-handler handler/c]
      [get-handler handler/c])]
   [make-mediator (-> mediator?)]
+  [void-mediator mediator?]
   [offer (-> mediator? any/c ... evt?)]
   [offer* (-> mediator? (listof any/c) evt?)]
   [accept (-> mediator? evt?)]
@@ -43,6 +44,13 @@
    (λ () (fmap (curry apply values) ctrl-ch))
    (λ vs (fmap void (channel-put-evt data-ch vs)))
    (λ () (fmap (curry apply values) data-ch))))
+
+(define void-mediator
+  (mediator
+   (λ _ (pure (void)))
+   (λ _ (pure (void)))
+   (λ _ (pure (void)))
+   (λ _ (pure (void)))))
 
 ;; Commands
 
@@ -125,6 +133,12 @@
       (thread (λ () (for ([i 10]) (check-pred void? (sync (put m i)))))))
     (for ([j 10]) (check = (sync (get m)) j))
     (void (sync t)))
+
+  (test-case "void-mediator"
+    (check-pred void? (sync (offer void-mediator)))
+    (check-pred void? (sync (accept void-mediator)))
+    (check-pred void? (sync (put void-mediator)))
+    (check-pred void? (sync (get void-mediator))))
 
   ;; Hooks
 
