@@ -171,6 +171,21 @@ receiver.
   ]
 }
 
+@defproc[
+  (dispatch [m mediator?]
+            [ms (hash/c any/c mediator?)]
+            [default mediator?])
+  evt?
+]{
+
+  Returns a @rtech{synchronizable event} that forwards an exchange on @var[m]
+  to one of the @var[ms] or @var[default]. If the value being exchanged is a
+  list and its first element is a key of @var[ms], the operation is restarted
+  on the keyed @tech{mediator}. Otherwise, the operation is restarted on the
+  @var[default] @tech{mediator}.
+
+}
+
 @subsection{Multi-sender exchanges}
 
 @defproc[(collect [m mediator?] [N exact-nonnegative-integer?]) evt?]{
