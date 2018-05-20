@@ -4,7 +4,6 @@
  cmx/mediator
  event
  event/base
- racket/dict
  racket/function
  racket/list)
 
@@ -41,9 +40,9 @@
 (define (forward m1 m2)
   (bind (accept m1) (curry offer m2)))
 
-(define (dispatch m ms)
+(define (dispatch m ms [default void-mediator])
   (define (dispatch-put m0)
-    (bind-put m0 (λ (next) (λ (k . vs) (say* (dict-ref ms k) vs m0)))))
+    (bind-put m0 (λ (next) (λ (k . vs) (say* (hash-ref ms k default) vs m0)))))
   (event-let ([m0 (accept m)]) (offer m0 (dispatch-put m0))))
 
 ;; Multiple senders
