@@ -60,14 +60,15 @@
 ;; Multiple receivers
 
 (define (broadcast m ms)
-  (define gate (make-gate))
+  (define G (make-gate))
   (define (gated-get)
-    (bind-get (make-mediator) (λ (next) (λ () (seq0 (next) gate)))))
+    (bind-get (make-mediator) (λ (~get) (λ () (gated G (~get))))))
   (define (gated-put mk)
-    (bind-put mk (λ (next) (λ vs (seq0 (apply next vs) gate)))))
+    (bind-put mk (λ (~put) (λ vs (gated G (apply ~put vs))))))
   (define (offer-gated-get mk)
     (define m* (gated-get))
-    (seq (offer mk m*) (accept m*)))
+    (seq (offer mk m*)
+         (accept m*)))
   (event-let
    ([m0 (accept m)]
     [m*s (async-list* (map offer-gated-get ms))])
@@ -77,7 +78,7 @@
       (event-let
        ([v (get m0*)])
        (async-set* (map (curryr put v) m*s))
-       (open-gate gate))))))
+       (open-gate G))))))
 
 ;;; Unit Tests
 
