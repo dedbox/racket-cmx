@@ -100,30 +100,26 @@
 
   ;; Commands
 
-  (test-case
-      "offer"
+  (test-case "offer"
     (define m (make-mediator))
     (define t (thread (λ () (for ([j 10]) (check = (sync (accept m)) j)))))
     (for ([i 10]) (check-pred void? (sync (offer m i))))
     (void (sync t)))
 
-  (test-case
-      "accept"
+  (test-case "accept"
     (define m (make-mediator))
     (define t
       (thread (λ () (for ([i 10]) (check-pred void? (sync (offer m i)))))))
     (for ([j 10]) (check = (sync (accept m)) j))
     (void (sync t)))
 
-  (test-case
-      "put"
+  (test-case "put"
     (define m (make-mediator))
     (define t (thread (λ () (for ([j 10]) (check = (sync (get m)) j)))))
     (for ([i 10]) (check-pred void? (sync (put m i))))
     (void (sync t)))
 
-  (test-case
-      "get"
+  (test-case "get"
     (define m (make-mediator))
     (define t
       (thread (λ () (for ([i 10]) (check-pred void? (sync (put m i)))))))
@@ -132,39 +128,34 @@
 
   ;; Hooks
 
-  (test-case
-      "on-offer"
+  (test-case "on-offer"
     (define m (on-offer (make-mediator) add1))
     (define t
       (thread (λ () (for ([j 10]) (check = (sync (accept m)) (add1 j))))))
     (for ([i 10]) (check-pred void? (sync (offer m i))))
     (void (sync t)))
 
-  (test-case
-      "on-accept"
+  (test-case "on-accept"
     (define m (on-accept (make-mediator) add1))
     (define t
       (thread (λ () (for ([i 10]) (check-pred void? (sync (offer m i)))))))
     (for ([j 10]) (check = (sync (accept m)) (add1 j)))
     (void (sync t)))
 
-  (test-case
-      "on-put"
+  (test-case "on-put"
     (define m (on-put (make-mediator) add1))
     (define t (thread (λ () (for ([j 10]) (check = (sync (get m)) (add1 j))))))
     (for ([i 10]) (check-pred void? (sync (put m i))))
     (void (sync t)))
 
-  (test-case
-      "on-get"
+  (test-case "on-get"
     (define m (on-get (make-mediator) add1))
     (define t
       (thread (λ () (for ([i 10]) (check-pred void? (sync (put m i)))))))
     (for ([j 10]) (check = (sync (get m)) (add1 j)))
     (void (sync t)))
 
-  (test-case
-      "on-*"
+  (test-case "on-*"
     (define m (make-mediator))
     (set! m (on-offer m (curry + 1)))
     (set! m (on-offer m (curry * 2)))
