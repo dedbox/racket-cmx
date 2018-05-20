@@ -157,16 +157,14 @@
     (check-quorum 4)
     (for-each sync ts))
 
-  (test-case
-      "broadcast"
+  (test-case "broadcast"
     (define m (make-mediator))
     (define ms (for/list ([_ 10]) (make-mediator)))
     (define t (thread (λ () (check-pred void? (sync (say m 1))))))
     (define ts (for/list ([mk ms] [k 10]) (thread (λ () (check = (sync (hear mk)) 1)))))
     (sync (broadcast m ms)))
 
-  (test-case
-      "broadcast example"
+  (test-case "broadcast example"
     (define m (make-mediator))
     (define ms (for/list ([_ 10]) (make-mediator)))
     (define t1 (thread (λ () (check-pred void? (sync (say m 1))))))
