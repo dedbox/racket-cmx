@@ -34,15 +34,12 @@
      expr ...
    ])
 
-This package implements an @racketmodname[event]-based calculus of mediated
-@tech{exchange} for expressing synchronizable rendezvous events with any
-number of participants. The participants of an @tech{exchange} may be
-arbitrarily linked, and an @tech{exchange} may carry information which changes
-that linkage.
+This package implements a calculus of mediated @tech{exchange} for expressing
+synchronizable rendezvous events with any number of participants linked
+arbitrarily. The calculus models a discrete communication as a series of
+rendezvous operations carried out by programmable forwarding constructs called
+@tech{mediators}.
 
-The calculus models a discrete communication as a series of rendezvous
-operations carried out by @tech{mediators}, programmable forwarding constructs
-capable of implementing and extending synchronous rendezvous operations.
 
 The included collection of @tech{mediator}-based @tech{exchanges} follows a
 two-phase protocol that supports any number of senders and receivers with
