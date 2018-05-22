@@ -180,9 +180,9 @@ receiver.
 
   Returns a @rtech{synchronizable event} that forwards an exchange on @var[m]
   to one of the @var[ms] or @var[default]. If the value being exchanged is a
-  list and its first element is a key of @var[ms], the operation is restarted
-  on the keyed @tech{mediator}. Otherwise, the operation is restarted on the
-  @var[default] @tech{mediator}.
+  list and its first element is a key of @var[ms], the remaining elements are
+  forwarded to the keyed @tech{mediator}. Otherwise, the remaining elements
+  are forwarded to @var[default].
 
 }
 
@@ -190,14 +190,13 @@ receiver.
 
 @defproc[(collect [m mediator?] [N exact-nonnegative-integer?]) evt?]{
 
-  Returns a @rtech{synchronizable event} that performs the passive side of a
-  simple @tech{push-based} @tech{exchange} iteratively. Becomes @rtech{ready
-  for synchronization} after @var[N] values are received. The
-  @rtech{synchronization result} is a list of the received values.
+  Returns a @rtech{synchronizable event} that becomes @rtech{ready for
+  synchronization} after receiving @var[N] values from @var[m]. The
+  @rtech{synchronization result} is a list of the @var[N] values.
 
   @example[
     (define M (make-mediator))
-    (for ([i 10]) (thread (λ () (sync (say M i)))))
+    (for ([i 10]) (thread (λ () (sync (say M i)) (display i))))
     (sync (collect M 3))
   ]
 }
