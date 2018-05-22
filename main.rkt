@@ -3,7 +3,6 @@
 (require
  cmx/mediator
  event
- event/base
  racket/function
  racket/list)
 
