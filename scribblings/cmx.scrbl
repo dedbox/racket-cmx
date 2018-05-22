@@ -178,11 +178,13 @@ receiver.
   evt?
 ]{
 
-  Returns a @rtech{synchronizable event} that forwards an exchange on @var[m]
-  to one of the @var[ms] or @var[default]. If the value being exchanged is a
-  list and its first element is a key of @var[ms], the remaining elements are
-  forwarded to the keyed @tech{mediator}. Otherwise, the remaining elements
-  are forwarded to @var[default].
+  Returns a @rtech{synchronizable event} that forwards a set of values from
+  @var[m] to an element of @var[ms]. If the first value is a key of @var[ms],
+  the remaining values are delivered to the keyed element. Otherwise, the
+  remaining values are forwarded to @var[default].
+
+  The dispatch event may finish before the values are delivered, but the
+  sender and receiver are guaranteed to synchronize on each other.
 
 }
 
