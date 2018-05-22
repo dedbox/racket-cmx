@@ -37,7 +37,7 @@
 This package implements a calculus of mediated @tech{exchange} for expressing
 synchronizable rendezvous events with any number of participants linked
 arbitrarily. The calculus models a discrete communication as a series of
-rendezvous operations carried out by programmable forwarding constructs called
+operations carried out by programmable forwarding constructs called
 @tech{mediators}.
 
 @section{Exchanges}
@@ -46,23 +46,28 @@ rendezvous operations carried out by programmable forwarding constructs called
 
 An @deftech{exchange} is a process by which some number of threads transfer
 values through one or more @tech{mediators}. An exchange is
-@deftech{push-based} when the sender initiates with a passive receiver, and
-@deftech{pull-based} when the receiver initiates with a passive sender.
+@deftech{push-based} when the sender initiates and @deftech{pull-based} when
+the receiver initiates.
 
 @subsection{Simple push-based exchanges}
 
-A simple exchange is a three-step process involving a single sender and
-receiver.
+A simple exchange is a three-step process with no mediators, one sender, and
+one receiver:
 
 @itemlist[
-  @item{The initiating side offers a base mediator and the passive side
-    accepts.}
-  @item{The passive side offers a final mediator through the base mediator and
-    the initiating side accepts.}
-  @item{One side puts values into the final mediator as the other side gets
-    the values out.}
+  @item{The initiator offers a base @tech{mediator}.}
+  @item{The accepter counter-offers a final @tech{mediator} through the base
+    @tech{mediator}.}
+  @item{The sender puts some values into the final @tech{mediator} as the
+    receiver gets the values out.}
   #:style 'ordered
 ]
+
+This protocol encapsulates the subtleties of third-party @tech{exchange}
+synchronization. The initiator establishes the link and offers a base set of
+behaviors. The acceptor expresses the behavior of the final synchronizing
+operation, typically as a chain of @tech{mediators} including the base
+behavior and ending with the default behavior.
 
 @deftogether[(
   @defproc[(say [m mediator?] [v any/c] ...) evt?]
@@ -277,13 +282,30 @@ receiver.
 @defmodule[cmx/mediator]
 
 A @deftech{mediator} is an extensible synchronization primitive capable of
-communicating over two distinct channels---one for establishing control and
-another for transferring data. Concretely, a mediator is a set of handlers. A
-@deftech{handler} is a function that implements, extends, or overrides one of
-the four basic @deftech{mediated operations}: @racket[offer], @racket[accept],
-@racket[put], and @racket[get]. A @deftech{hook} is a function that extends
-the behavior of a mediated operation by transforming the values being
-exchanged.
+communicating over two distinct @rtech{channels}---one for establishing
+control and another for transferring data. When one thread offers values to a
+@tech{mediator} while another thread accepts from the same @tech{mediator},
+the values go through the @deftech{control channel} of the @tech{mediator}.
+When one thread puts values to a @tech{mediator} while another thread gets
+from the same @tech{mediator}, the values go through the @deftech{data
+channel} of the @tech{mediator}.
+
+Concretely, a mediator is a set of handlers. A @deftech{handler} is a function
+that implements one of the four basic @deftech{mediated operations}:
+@racket[offer], @racket[accept], @racket[put], or @racket[get].
+
+The behavior of the @tech{mediated operations} for a given @tech{mediator} are
+completely determined by its @tech{handlers} and may be overridden completely.
+For example, @racket[void-mediator] makes all operations ignore arguments and
+return an event that produces @(values void-const). The default behaviors of a
+@tech{mediator} are modeled as operations on its @tech{control channel} or
+@tech{data channel}. In addition to a full set of @rtech{structure type}
+bindings, a set of functional mutators is provided: @racket[bind-offer],
+@racket[bind-accept], @racket[bind-put], and @racket[bind-get].
+
+A @deftech{hook} is a function that extends the behavior of an existing
+@tech{mediator}. A set of functional extenders is provided: @racket[on-offer],
+@racket[on-accept], @racket[on-put], and @racket[on-get].
 
 @defthing[
   handler/c contract?
