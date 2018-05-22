@@ -44,7 +44,7 @@
   (define (dispatch-put m0)
     (bind-put
      (make-mediator)
-     (λ (~put) (λ (k . vs) (say* (hash-ref ms k default) vs m0)))))
+     (λ _ (λ (k . vs) (say* (hash-ref ms k default) vs m0)))))
   (event-let ([m0 (accept m)]) (offer m0 (dispatch-put m0))))
 
 ;; Multiple senders
@@ -90,7 +90,7 @@
   (define (multi-put m0)
     (bind-put
      (make-mediator)
-     (λ (~put)
+     (λ _
        (λ (ks . vs)
          (define mks (map (λ (k) (hash-ref ms k #f)) ks))
          (if (or (null? mks) (member #f mks))
