@@ -57,7 +57,7 @@
 (define (quorum m N)
   (event-let
    ([m0s (fmap* list (make-list N (accept m)))])
-   (fmap list (async-set* (map (λ (m0) (seq (offer m0 m0) (get m0))) m0s)))))
+   (async-list* (map (λ (m0) (seq (offer m0 m0) (get m0))) m0s))))
 
 ;; Multiple receivers
 
