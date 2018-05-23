@@ -136,7 +136,7 @@ behavior and ending with the default behavior.
 
 @deftogether[(
   @defproc[(tell [m mediator?] [v any/c] ...) evt?]
-  @defproc[(tell* [m mediator?] [vs (listof any/c)]) evy?]
+  @defproc[(tell* [m mediator?] [vs (listof any/c)]) evt?]
 )]{
 
   @(accept "m" "m0")
