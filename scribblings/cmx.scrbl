@@ -188,7 +188,7 @@ behavior and ending with the default behavior.
   @(accept "m1" "m0")
   @(offer "m2" "m0*")
 
-  Returns a @rtech {synchronizable event} that accepts a base @tech{mediator}
+  Returns a @rtech{synchronizable event} that accepts a base @tech{mediator}
   from @var[m1], extends it with any non-@racket[#f] hooks, and offers it to
   @var[m2]. Becomes @rtech{ready for synchronization} when @var[m2] accepts
   the extended base @tech{mediator}, pussibly before the exchange is
