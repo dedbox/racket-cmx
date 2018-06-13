@@ -168,11 +168,10 @@ behavior and ending with the default behavior.
   @example[
     (define M1 (make-mediator))
     (define M2 (make-mediator))
-    (eval:alts (thread (λ () (sync (say M1 1))))
-               (void (thread (λ () (sync (say M1 1))))))
-    (eval:alts (thread (λ () (sync (forward M1 M2))))
-               (void (thread (λ () (sync (forward M1 M2))))))
-    (sync (hear M2))
+    (begin
+      (thread (λ () (sync (say M1 1))))
+      (thread (λ () (sync (forward M1 M2))))
+      (sync (hear M2)))
   ]
 }
 
