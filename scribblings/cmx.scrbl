@@ -13,7 +13,7 @@
   (for-label cmx
              cmx/mediator
              event
-             racket/base
+             (except-in racket/base filter)
              racket/contract/base))
 
 @(define (rtech . args)
@@ -174,6 +174,34 @@ behavior and ending with the default behavior.
                (void (thread (λ () (sync (forward M1 M2))))))
     (sync (hear M2))
   ]
+}
+
+@defproc[
+  (filter [m1 mediator?]
+          [m2 mediator?]
+          [#:offer offer-hook (or/c procedure? #f) #f]
+          [#:accept accept-hook (or/c procedure? #f) #f]
+          [#:put put-hook (or/c procedure? #f) #f]
+          [#:get get-hook (or/c procedure? #f) #f])
+  evt?
+]{
+
+  @(accept "m1" "m0")
+  @(offer "m2" "m0*")
+
+  Returns a @rtech {synchronizable event} that accepts a base @tech{mediator}
+  from @var[m1], extends it with any non-@racket[#f] hooks, and offers it to
+  @var[m2]. Becomes @rtech{ready for synchronization} when @var[m2] accepts
+  the extended base @tech{mediator}, pussibly before the exchange is
+  completed.
+
+  @; @example[
+  @;   (define M1 (make-mediator))
+  @;   (define M2 (make-mediator))
+  @;   (begin
+  @;     (thread (λ () (sync (say M1 123))))
+  @;     (threa
+  @; ]
 }
 
 @defproc[
