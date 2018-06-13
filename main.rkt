@@ -6,7 +6,9 @@
  racket/function
  racket/list)
 
-(provide (all-defined-out))
+(provide
+ (all-from-out cmx/mediator)
+ (all-defined-out))
 
 ;; Simple Exchanges
 
