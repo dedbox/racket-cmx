@@ -308,27 +308,22 @@ behavior and ending with the default behavior.
 
 @defmodule[cmx/mediator]
 
-A @deftech{mediator} is an extensible synchronization primitive capable of
-communicating over two distinct @rtech{channels}---one for establishing
-control and another for transferring data. When one thread offers values to a
-@tech{mediator} while another thread accepts from the same @tech{mediator},
-the values go through the @deftech{control channel} of the @tech{mediator}.
-When one thread puts values to a @tech{mediator} while another thread gets
-from the same @tech{mediator}, the values go through the @deftech{data
-channel} of the @tech{mediator}.
+A @deftech{mediator} is an extensible synchronization primitive modeled as a
+pair of @rtech{channels} and a set of @deftech{handler} functions implementing
+the four basic @deftech{mediated operations}: @racket[offer], @racket[accept],
+@racket[put], and @racket[get]. If one thread offers a value to a
+@tech{mediator} and another thread accepts from the same @tech{mediator}, the
+value goes through the @deftech{control channel} of the @tech{mediator}.
+Similarly, if one thread puts while another thread gets, the values goes
+through the @deftech{data channel} of the @tech{mediator}.
 
-Concretely, a mediator is a set of handlers. A @deftech{handler} is a function
-that implements one of the four basic @deftech{mediated operations}:
-@racket[offer], @racket[accept], @racket[put], or @racket[get].
-
-The behavior of the @tech{mediated operations} for a given @tech{mediator} are
-completely determined by its @tech{handlers} and may be overridden completely.
-For example, @racket[void-mediator] makes all operations ignore arguments and
-return an event that produces @(values void-const). The default behaviors of a
-@tech{mediator} are modeled as operations on its @tech{control channel} or
-@tech{data channel}. In addition to a full set of @rtech{structure type}
-bindings, a set of functional mutators is provided: @racket[bind-offer],
-@racket[bind-accept], @racket[bind-put], and @racket[bind-get].
+The behavior of a @tech{mediator} under a given @tech{mediated operation} is
+completely determined by its @tech{handler}. The default behaviors are modeled
+as operations on its @tech{control channel} or @tech{data channel}, and may be
+extended or overridden. The full set of @rtech{structure type} bindings for
+the @tech{mediator} type is provided. Mutators for the @tech{handler}
+functions are also provided: @racket[bind-offer], @racket[bind-accept],
+@racket[bind-put], and @racket[bind-get].
 
 A @deftech{hook} is a function that extends the behavior of an existing
 @tech{mediator}. A set of functional extenders is provided: @racket[on-offer],
