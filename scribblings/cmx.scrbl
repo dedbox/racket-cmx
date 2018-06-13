@@ -194,13 +194,16 @@ behavior and ending with the default behavior.
   the extended base @tech{mediator}, pussibly before the exchange is
   completed.
 
-  @; @example[
-  @;   (define M1 (make-mediator))
-  @;   (define M2 (make-mediator))
-  @;   (begin
-  @;     (thread (λ () (sync (say M1 123))))
-  @;     (threa
-  @; ]
+  @example[
+    (define M1 (make-mediator))
+    (define M2 (make-mediator))
+    (begin
+      (thread (λ () (sync (say M1 4))))
+      (thread (λ () (sync (filter M1 M2
+                                  #:put (curry * 2)
+                                  #:get (curry + 3)))))
+      (sync (hear M2)))
+  ]
 }
 
 @defproc[
