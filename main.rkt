@@ -152,7 +152,7 @@
     (define t1 (thread (λ () (for ([i 10]) (sync (say m1 i))))))
     (define t2 (thread (λ () (for ([j 10]) (check = (sync (hear m2)) j)))))
     (for ([_ 10]) (sync (forward m1 m2)))
-    (sync (fmap void t1 t2)))
+    (sync (async-void t1 t2)))
 
   ;; (test-case "filter-put"
   ;;   (define m1))
