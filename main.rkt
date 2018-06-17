@@ -54,8 +54,10 @@
     m0)
   (event-let ([m0 (accept m1)]) (offer m2 (add-hooks m0))))
 
-;; (define (couple m1 m2 [m0 (make-mediator)])
-;;   (offer m2 ))
+(define (couple m1 m2 [m0 (make-mediator)])
+  (seq
+   (offer m1 m0)
+   (event-let ([m0* (accept m0)]) (offer m2 m0*) (accept m0*))))
 
 (define (dispatch m ms [default void-mediator])
   (define (dispatch-put m0)
@@ -154,6 +156,22 @@
 
   ;; (test-case "filter-put"
   ;;   (define m1))
+
+  (test-case "couple tell-hear"
+    (define m1 (make-mediator))
+    (define m2 (make-mediator))
+    (define t1 (thread (λ () (for ([i 10]) (sync (tell m1 i))))))
+    (define t2 (thread (λ () (for ([j 10]) (check = (sync (hear m2)) j)))))
+    (for ([_ 10]) (sync (couple m1 m2)))
+    (sync (fmap void t1 t2)))
+
+  (test-case "couple hear-tell"
+    (define m1 (make-mediator))
+    (define m2 (make-mediator))
+    (define t1 (thread (λ () (for ([i 10]) (sync (tell m1 i))))))
+    (define t2 (thread (λ () (for ([j 10]) (check = (sync (hear m2)) j)))))
+    (for ([_ 10]) (sync (couple m2 m1)))
+    (sync (fmap void t1 t2)))
 
   (test-case "dispatch"
     (define m (make-mediator))
