@@ -76,7 +76,7 @@
   (event-let ([m0 (accept m1)]) (offer m2 (add-hooks m0))))
 
 (define (couple m1 m2 [m0 (make-mediator)])
-  (seq
+  (event-void
    (offer m1 m0)
    (event-let ([m0* (accept m0)]) (offer m2 m0*) (accept m0*))))
 
