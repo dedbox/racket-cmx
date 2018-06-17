@@ -154,8 +154,19 @@
     (for ([_ 10]) (sync (forward m1 m2)))
     (sync (async-void t1 t2)))
 
-  ;; (test-case "filter-put"
-  ;;   (define m1))
+  (test-case "filter-put"
+    (define m1 (make-mediator))
+    (define m2 (make-mediator))
+    (define t1 (thread (λ () (for ([i 10]) (sync (say m1 i))))))
+    (define t2 (thread (λ () (for ([j 10]) (check = (sync (hear m2)) (+ j 1))))))
+    (for ([_ 10]) (sync (filter m1 m2 #:put add1))))
+
+  (test-case "filter-get"
+    (define m1 (make-mediator))
+    (define m2 (make-mediator))
+    (define t1 (thread (λ () (for ([i 10]) (sync (say m1 i))))))
+    (define t2 (thread (λ () (for ([j 10]) (check = (sync (hear m2)) (+ j 1))))))
+    (for ([_ 10]) (sync (filter m1 m2 #:get add1))))
 
   (test-case "couple tell-hear"
     (define m1 (make-mediator))
