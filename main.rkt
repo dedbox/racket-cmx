@@ -3,12 +3,33 @@
 (require
  cmx/mediator
  event
+ racket/contract/base
  racket/function
  racket/list)
 
+(provide (all-from-out cmx/mediator))
+
 (provide
- (all-from-out cmx/mediator)
- (all-defined-out))
+ (contract-out
+  [say (-> mediator? any/c ... evt?)]
+  [say* (->* (mediator? list?) (mediator?) evt?)]
+  [hear (->* (mediator?) (procedure?) evt?)]
+  [ask (->* (mediator?) (mediator?) evt?)]
+  [tell (-> mediator? any/c ... evt?)]
+  [tell* (->* (mediator? list?) (procedure?) evt?)]
+  [forward (-> mediator? mediator? evt?)]
+  [filter (->* (mediator? mediator?) (#:offer procedure?
+                                      #:accept procedure?
+                                      #:put procedure?
+                                      #:get procedure?) evt?)]
+  [couple (->* (mediator? mediator?) (mediator?) evt?)]
+  [dispatch (->* (mediator? (hash/c any/c mediator?)) (mediator?) evt?)]
+  [collect (-> mediator? exact-nonnegative-integer? evt?)]
+  [quorum (-> mediator? exact-nonnegative-integer? evt?)]
+  [broadcast (-> mediator? (listof mediator?) evt?)]
+  [multicast (->* (mediator? (hash/c any/c mediator?))
+                  ((-> (listof (or/c mediator? #f)) list? list? mediator?))
+                  evt?)]))
 
 ;; Simple Exchanges
 
