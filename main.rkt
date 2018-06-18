@@ -99,6 +99,9 @@
    ([m0s (fmap* list (make-list N (accept m)))])
    (async-list* (map (λ (m0) (seq (offer m0 m0) (get m0))) m0s))))
 
+(define (gather ms [N #f])
+  (memoize (fmap list (async-args* (map hear ms) #:limit N))))
+
 ;; Multiple receivers
 
 (define (broadcast m ms)
@@ -241,6 +244,23 @@
     (check-quorum 3)
     (check-quorum 3)
     (check-quorum 4)
+    (for-each sync ts))
+
+  (test-case "gather"
+    (define ms (build-list 10 (λ _ (make-mediator))))
+    (define ts (for/list ([i 10] [m ms]) (thread (λ () (sync (say m i))))))
+    (define seen null)
+    (define (check-gather N)
+      (define xs (sync (gather ms N)))
+      (check-pred list? xs)
+      (check = (length xs) N)
+      (check-true
+       (andmap (λ (x) (and (>= x 0) (< x 10) (not (member x seen)))) xs))
+      (set! seen (append xs seen))
+      (for-each (compose sync (curry list-ref ts)) xs))
+    (check-gather 3)
+    (check-gather 3)
+    (check-gather 4)
     (for-each sync ts))
 
   (test-case "broadcast"
