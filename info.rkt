@@ -4,7 +4,7 @@
 
 (define deps
   '("base"
-    "event-lang"))
+    "event"))
 
 (define build-deps
   '("draw-lib"
